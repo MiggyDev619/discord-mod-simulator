@@ -1,0 +1,14 @@
+# Project place file
+/discord-mod-simulator.rbxlx
+
+# Rojo build artifact
+/build.rbxl
+
+# Day 1 archival place file (kept locally, not version-controlled)
+/DiscordModSimulator.rbxl
+
+# Roblox Studio lock files
+/*.rbxlx.lock
+/*.rbxl.lock
+
+sourcemap.json

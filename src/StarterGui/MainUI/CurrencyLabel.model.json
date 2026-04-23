@@ -1,0 +1,40 @@
+{
+  "className": "TextLabel",
+  "properties": {
+    "Text": "Coins: 0",
+    "Size": {"UDim2": [[0, 240], [0, 40]]},
+    "Position": {"UDim2": [[0, 12], [0, 12]]},
+    "AnchorPoint": {"Vector2": [0, 0]},
+    "BackgroundColor3": [0.08, 0.08, 0.08],
+    "BackgroundTransparency": 0.3,
+    "BorderSizePixel": 0,
+    "TextColor3": [1, 0.84, 0],
+    "Font": "GothamBold",
+    "TextScaled": true,
+    "TextWrapped": false,
+    "TextXAlignment": "Left"
+  },
+  "children": [
+    {
+      "className": "UICorner",
+      "properties": {
+        "CornerRadius": {"UDim": [0, 8]}
+      }
+    },
+    {
+      "className": "UIPadding",
+      "properties": {
+        "PaddingLeft": {"UDim": [0, 12]},
+        "PaddingRight": {"UDim": [0, 12]},
+        "PaddingTop": {"UDim": [0, 6]},
+        "PaddingBottom": {"UDim": [0, 6]}
+      }
+    },
+    {
+      "className": "UITextSizeConstraint",
+      "properties": {
+        "MaxTextSize": 20
+      }
+    }
+  ]
+}

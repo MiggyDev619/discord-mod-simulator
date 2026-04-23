@@ -1,0 +1,127 @@
+-- ReplicatedStorage/Shared/Effects
+-- Small visual/audio effects triggered by gameplay events.
+-- All effects are short-lived instances parented to workspace; they clean themselves up.
+
+local TweenService = game:GetService("TweenService")
+local Debris       = game:GetService("Debris")
+
+local Config = require(script.Parent:WaitForChild("Config"))
+
+local Effects = {}
+
+-- Tunables kept local because they're not gameplay-tunable (change feel, not balance).
+local PARTICLE_COUNT  = 25
+local PARTICLE_COLOR  = Color3.fromRGB(255, 60, 60)
+local POPUP_RISE      = 3         -- studs the +N text rises
+local POPUP_DURATION  = 0.9
+local EFFECT_LIFETIME = 1.5       -- seconds before cleanup
+local FLASH_DURATION  = 0.15      -- seconds the enemy flashes white before despawn
+
+local function createAnchor(position)
+	local p = Instance.new("Part")
+	p.Size          = Vector3.new(0.2, 0.2, 0.2)
+	p.Position      = position
+	p.Anchored      = true
+	p.CanCollide    = false
+	p.CanQuery      = false
+	p.CanTouch      = false
+	p.Transparency  = 1
+	p.Parent        = workspace
+	return p
+end
+
+local function playParticleBurst(anchor)
+	local emitter = Instance.new("ParticleEmitter")
+	emitter.Texture      = "rbxasset://textures/particles/sparkles_main.dds"
+	emitter.Color        = ColorSequence.new(PARTICLE_COLOR)
+	emitter.Size         = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 1.2),
+		NumberSequenceKeypoint.new(1, 0),
+	})
+	emitter.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0),
+		NumberSequenceKeypoint.new(1, 1),
+	})
+	emitter.Lifetime     = NumberRange.new(0.4, 0.8)
+	emitter.Speed        = NumberRange.new(14, 22)
+	emitter.SpreadAngle  = Vector2.new(180, 180)
+	emitter.Rate         = 0
+	emitter.LightEmission = 0.5
+	emitter.Parent       = anchor
+	emitter:Emit(PARTICLE_COUNT)
+end
+
+local function playBanSound(anchor)
+	if Config.BAN_SOUND_ID == "" then return end
+	local sound    = Instance.new("Sound")
+	sound.SoundId  = Config.BAN_SOUND_ID
+	sound.Volume   = Config.BAN_SOUND_VOLUME
+	sound.Parent   = anchor
+	sound:Play()
+end
+
+local function spawnCoinPopup(position, reward)
+	local anchor = createAnchor(position + Vector3.new(0, 2, 0))
+
+	local billboard = Instance.new("BillboardGui")
+	billboard.Size         = UDim2.new(0, 120, 0, 40)
+	billboard.AlwaysOnTop  = true
+	billboard.LightInfluence = 0
+	billboard.Parent       = anchor
+
+	local label = Instance.new("TextLabel")
+	label.Size                   = UDim2.new(1, 0, 1, 0)
+	label.BackgroundTransparency = 1
+	label.Text                   = "+" .. reward
+	label.TextColor3             = Color3.fromRGB(255, 215, 0)
+	label.TextStrokeTransparency = 0
+	label.TextStrokeColor3       = Color3.fromRGB(0, 0, 0)
+	label.Font                   = Enum.Font.GothamBold
+	label.TextSize               = 32
+	label.Parent                 = billboard
+
+	local rise = TweenService:Create(
+		anchor,
+		TweenInfo.new(POPUP_DURATION, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+		{ Position = anchor.Position + Vector3.new(0, POPUP_RISE, 0) }
+	)
+	local fade = TweenService:Create(
+		label,
+		TweenInfo.new(POPUP_DURATION, Enum.EasingStyle.Linear),
+		{ TextTransparency = 1, TextStrokeTransparency = 1 }
+	)
+	rise:Play()
+	fade:Play()
+
+	Debris:AddItem(anchor, EFFECT_LIFETIME)
+end
+
+function Effects.BanEffect(position, reward)
+	local anchor = createAnchor(position)
+	playParticleBurst(anchor)
+	playBanSound(anchor)
+	Debris:AddItem(anchor, EFFECT_LIFETIME)
+
+	if reward and reward > 0 then
+		spawnCoinPopup(position, reward)
+	end
+end
+
+-- Flashes an enemy part white/neon, freezes it in place, and schedules its destruction.
+-- Clears IsEnemy so other systems stop seeing it as targetable mid-flash.
+function Effects.HitFlash(part)
+	if not part or not part.Parent then return end
+
+	part:SetAttribute("IsEnemy", false)
+	part.Anchored   = true
+	part.CanCollide = false
+	part.Material   = Enum.Material.Neon
+	part.Color      = Color3.fromRGB(255, 255, 255)
+
+	local bv = part:FindFirstChildOfClass("BodyVelocity")
+	if bv then bv:Destroy() end
+
+	Debris:AddItem(part, FLASH_DURATION)
+end
+
+return Effects

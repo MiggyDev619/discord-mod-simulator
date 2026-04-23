@@ -1,0 +1,33 @@
+{
+  "className": "Folder",
+  "children": [
+    {
+      "name": "HealthChanged",
+      "className": "RemoteEvent"
+    },
+    {
+      "name": "GameOver",
+      "className": "RemoteEvent"
+    },
+    {
+      "name": "BanEnemy",
+      "className": "RemoteEvent"
+    },
+    {
+      "name": "PurchaseUpgrade",
+      "className": "RemoteEvent"
+    },
+    {
+      "name": "WaveStarted",
+      "className": "RemoteEvent"
+    },
+    {
+      "name": "WaveBreak",
+      "className": "RemoteEvent"
+    },
+    {
+      "name": "GameWon",
+      "className": "RemoteEvent"
+    }
+  ]
+}
