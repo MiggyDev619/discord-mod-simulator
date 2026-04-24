@@ -36,7 +36,7 @@ Config.MUTE_SOUND_VOLUME     = 0.7
 Config.TIMEOUT_RANGE         = 18    -- between ban and mute
 Config.TIMEOUT_COOLDOWN      = 2.5   -- slower than mute, faster than the old 3.0 to stay useable
 Config.TIMEOUT_DURATION      = 4.0   -- > mute's effective 3.75s of saved distance, so freeze > slow
-Config.TIMEOUT_SOUND_ID      = ""    -- empty = silent; drop an rbxassetid here later
+Config.TIMEOUT_SOUND_ID      = "rbxassetid://9119366743"
 Config.TIMEOUT_SOUND_VOLUME  = 0.7
 
 -- Wave system
