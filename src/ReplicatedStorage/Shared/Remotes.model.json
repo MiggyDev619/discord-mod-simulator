@@ -18,6 +18,10 @@
       "className": "RemoteEvent"
     },
     {
+      "name": "TimeoutEnemy",
+      "className": "RemoteEvent"
+    },
+    {
       "name": "PurchaseUpgrade",
       "className": "RemoteEvent"
     },

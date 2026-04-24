@@ -32,6 +32,13 @@ Config.MUTE_DURATION         = 5.0   -- seconds the slow lasts
 Config.MUTE_SOUND_ID         = "rbxassetid://115994842117368"
 Config.MUTE_SOUND_VOLUME     = 0.7
 
+-- Timeout Card (full freeze; panic button — more saved-distance than mute per cast)
+Config.TIMEOUT_RANGE         = 18    -- between ban and mute
+Config.TIMEOUT_COOLDOWN      = 2.5   -- slower than mute, faster than the old 3.0 to stay useable
+Config.TIMEOUT_DURATION      = 4.0   -- > mute's effective 3.75s of saved distance, so freeze > slow
+Config.TIMEOUT_SOUND_ID      = ""    -- empty = silent; drop an rbxassetid here later
+Config.TIMEOUT_SOUND_VOLUME  = 0.7
+
 -- Wave system
 Config.WAVE_ENEMY_BASE       = 5     -- enemies in wave 1
 Config.WAVE_ENEMY_SCALE      = 3     -- additional enemies added each wave

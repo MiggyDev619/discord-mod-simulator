@@ -21,6 +21,8 @@ local map        = workspace:WaitForChild("Map")
 local enemyStart = map:WaitForChild("EnemyStart")
 local serverZone = map:WaitForChild("ServerZone")
 
+local MUTE_COLOR = Color3.fromRGB(70, 150, 255)
+
 local activeEnemies = {}
 local lastBanTime   = {}  -- [player] = tick of last accepted ban
 
@@ -106,14 +108,18 @@ RunService.Heartbeat:Connect(function(dt)
 			continue
 		end
 
-		-- Mute state: slows while MutedUntil > now; restores color + clears attrs when expired.
-		local effectiveSpeed = data.speed
-		local mutedUntil     = enemy:GetAttribute("MutedUntil")
-		if mutedUntil then
-			if now < mutedUntil then
-				effectiveSpeed = data.speed * Config.MUTE_SLOW_FACTOR
+		-- Status effects: Timeout (freeze) overrides Mute (slow). Both timers can stack;
+		-- when the stronger one expires, color drops back to the weaker active effect,
+		-- and finally to OriginalColor once nothing is active.
+		local frozenUntil = enemy:GetAttribute("FrozenUntil")
+		local mutedUntil  = enemy:GetAttribute("MutedUntil")
+
+		if frozenUntil and now >= frozenUntil then
+			enemy:SetAttribute("FrozenUntil", nil)
+			frozenUntil = nil
+			if mutedUntil and now < mutedUntil then
+				enemy.Color = MUTE_COLOR
 			else
-				enemy:SetAttribute("MutedUntil", nil)
 				local origColor = enemy:GetAttribute("OriginalColor")
 				if origColor then
 					enemy.Color = origColor
@@ -122,18 +128,41 @@ RunService.Heartbeat:Connect(function(dt)
 			end
 		end
 
+		if mutedUntil and now >= mutedUntil then
+			enemy:SetAttribute("MutedUntil", nil)
+			mutedUntil = nil
+			if not enemy:GetAttribute("FrozenUntil") then
+				local origColor = enemy:GetAttribute("OriginalColor")
+				if origColor then
+					enemy.Color = origColor
+					enemy:SetAttribute("OriginalColor", nil)
+				end
+			end
+		end
+
+		local effectiveSpeed = data.speed
+		if frozenUntil then
+			effectiveSpeed = 0
+		elseif mutedUntil then
+			effectiveSpeed = data.speed * Config.MUTE_SLOW_FACTOR
+		end
+
 		local diff     = zonePos - enemy.Position
 		local distance = diff.Magnitude
 
 		if distance < 5 then
 			data.velocity.Velocity = Vector3.new(0, 0, 0)
-			data.damageCooldown   -= dt
 
-			if data.damageCooldown <= 0 then
-				data.damageCooldown = Config.ENEMY_DAMAGE_INTERVAL
-				GameManager.TakeDamage(Config.SERVER_DAMAGE)
-				enemy:Destroy()
-				table.remove(activeEnemies, i)
+			-- Frozen enemies stall at the zone instead of ticking damage —
+			-- Timeout should fully pause them, not just stop their walk.
+			if not frozenUntil then
+				data.damageCooldown -= dt
+				if data.damageCooldown <= 0 then
+					data.damageCooldown = Config.ENEMY_DAMAGE_INTERVAL
+					GameManager.TakeDamage(Config.SERVER_DAMAGE)
+					enemy:Destroy()
+					table.remove(activeEnemies, i)
+				end
 			end
 		else
 			data.velocity.Velocity = diff.Unit * effectiveSpeed
