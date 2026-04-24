@@ -14,6 +14,10 @@
       "className": "RemoteEvent"
     },
     {
+      "name": "MuteEnemy",
+      "className": "RemoteEvent"
+    },
+    {
       "name": "PurchaseUpgrade",
       "className": "RemoteEvent"
     },

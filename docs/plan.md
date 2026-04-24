@@ -285,7 +285,16 @@ Goal: **Ship it.**
 
 ---
 
-## 9. Reality Check
+## 9. Deferred polish / backlog
+
+Known improvements we've explicitly chosen not to build yet. Revisit in Phase 2 polish or Phase 5 if they're still relevant.
+
+- **Mute Gun → real aim-and-shoot targeting.** Currently picks the closest `IsEnemy` part in a 20-stud sphere, same pattern as the Ban Hammer. Feels like a long-range Ban Hammer, not a gun. Three upgrade paths, in order of effort: (1) mouse-raycast — `Mouse.Hit` + closest enemy to the ray, ≈15 lines, enables range bump to 40–60 studs; (2) forward cone — reject enemies not in front of `HumanoidRootPart.CFrame.LookVector` via dot product, ≈5 lines; (3) visible projectile with travel time. Option 1 is the right default when we pick this up.
+- **Map polish.** Default Roblox `SpawnLocation` sits mid-lane and enemies sometimes collide with it. Scheduled Phase 5 (Days 23–24). Can do a 30-sec spawn reposition earlier if it becomes annoying.
+
+---
+
+## 10. Reality Check
 
 - Days 1–5 are the hardest. You're in it now.
 - Days 6–12 are where it gets fun.

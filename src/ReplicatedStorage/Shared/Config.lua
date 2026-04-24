@@ -24,6 +24,14 @@ Config.BAN_DAMAGE            = 999
 Config.BAN_RANGE             = 15
 Config.BAN_COOLDOWN          = 0.5
 
+-- Mute Gun (slows enemies; non-destructive utility)
+Config.MUTE_RANGE            = 20    -- longer than BAN_RANGE (ranged)
+Config.MUTE_COOLDOWN         = 1.5   -- slower than ban; utility tool
+Config.MUTE_SLOW_FACTOR      = 0.25  -- muted enemy moves at 25% of its normal speed
+Config.MUTE_DURATION         = 5.0   -- seconds the slow lasts
+Config.MUTE_SOUND_ID         = "rbxassetid://115994842117368"
+Config.MUTE_SOUND_VOLUME     = 0.7
+
 -- Wave system
 Config.WAVE_ENEMY_BASE       = 5     -- enemies in wave 1
 Config.WAVE_ENEMY_SCALE      = 3     -- additional enemies added each wave

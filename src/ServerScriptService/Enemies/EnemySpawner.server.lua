@@ -95,6 +95,7 @@ RunService.Heartbeat:Connect(function(dt)
 	if GameManager.IsGameOver() then return end
 
 	local zonePos = serverZone.Position
+	local now     = tick()
 
 	for i = #activeEnemies, 1, -1 do
 		local data  = activeEnemies[i]
@@ -103,6 +104,22 @@ RunService.Heartbeat:Connect(function(dt)
 		if not enemy or not enemy.Parent then
 			table.remove(activeEnemies, i)
 			continue
+		end
+
+		-- Mute state: slows while MutedUntil > now; restores color + clears attrs when expired.
+		local effectiveSpeed = data.speed
+		local mutedUntil     = enemy:GetAttribute("MutedUntil")
+		if mutedUntil then
+			if now < mutedUntil then
+				effectiveSpeed = data.speed * Config.MUTE_SLOW_FACTOR
+			else
+				enemy:SetAttribute("MutedUntil", nil)
+				local origColor = enemy:GetAttribute("OriginalColor")
+				if origColor then
+					enemy.Color = origColor
+					enemy:SetAttribute("OriginalColor", nil)
+				end
+			end
 		end
 
 		local diff     = zonePos - enemy.Position
@@ -119,7 +136,7 @@ RunService.Heartbeat:Connect(function(dt)
 				table.remove(activeEnemies, i)
 			end
 		else
-			data.velocity.Velocity = diff.Unit * data.speed
+			data.velocity.Velocity = diff.Unit * effectiveSpeed
 		end
 	end
 end)

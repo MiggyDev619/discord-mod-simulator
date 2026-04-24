@@ -35,7 +35,7 @@ Rojo produces almost every non-script runtime object via `.model.json` / `.meta.
 
 | Object | Source | Notes |
 |---|---|---|
-| `ReplicatedStorage.Shared.Remotes` + all `RemoteEvent`s | `src/ReplicatedStorage/Shared/Remotes.model.json` | Single file owns the whole subtree. Current events: `HealthChanged`, `GameOver`, `GameWon`, `BanEnemy`, `PurchaseUpgrade`, `WaveStarted`, `WaveBreak` |
+| `ReplicatedStorage.Shared.Remotes` + all `RemoteEvent`s | `src/ReplicatedStorage/Shared/Remotes.model.json` | Single file owns the whole subtree. Current events: `HealthChanged`, `GameOver`, `GameWon`, `BanEnemy`, `MuteEnemy`, `PurchaseUpgrade`, `WaveStarted`, `WaveBreak` |
 | `StarterGui.MainUI` as `ScreenGui` | `src/StarterGui/MainUI/init.meta.json` | `ResetOnSpawn = false` |
 | `MainUI` children (`HealthLabel`, `CurrencyLabel`, `WaveLabel`, `UpgradeButton`) | `src/StarterGui/MainUI/*.model.json` | **Fully Rojo-owned** including Size/Position/AnchorPoint/colors/Font/TextSize plus nested `UIPadding`/`UICorner` children. Don't style in Studio — edit the `.model.json`. |
 | `StarterPack.BanHammer` as `Tool` | `src/StarterPack/BanHammer/init.meta.json` | `RequiresHandle = true`. The Tool's `TextureId` (hotbar icon) is set in Studio only — Rojo doesn't own it |
@@ -58,6 +58,7 @@ When adding a new RemoteEvent, Tool, or GUI element, prefer adding it via `.mode
 - **One system per script, kept in its folder** (`Systems/`, `Enemies/`, `Rounds/`). Don't merge systems or add monoliths.
 - **Server-authoritative for destructive actions.** Ban Hammer LocalScript picks a target and fires `BanEnemy:FireServer(enemyPart)`. Server validates (part has `IsEnemy == true`, is a descendant of workspace, player is within `BAN_RANGE * 1.5`, server-side cooldown from `player:GetAttribute("BanCooldown")`) before destroying and rewarding. Keep this pattern for new tools — never let the client delete or damage enemies directly.
 - **Enemies are identified by the `IsEnemy` attribute, not by Name.** Each enemy also carries a `Reward` attribute so coin award is data-driven. If you add a new enemy type, set both attributes when spawning — every matcher in the codebase keys off them.
+- **Temporary enemy state lives on attributes.** The Mute Gun sets `MutedUntil` (number) and `OriginalColor` (Color3) on the target. `EnemySpawner`'s heartbeat reads `MutedUntil` each frame, applies `MUTE_SLOW_FACTOR` while active, and restores the color + clears the attributes when it expires. Future status effects (Timeout, Stun, DoT) should follow the same "attribute-as-timer" pattern — one writer, one reader.
 
 ## Design constraints for new work
 
