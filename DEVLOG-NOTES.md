@@ -11,6 +11,67 @@ Raw build notes for the Discord Mod Simulator Roblox project, structured for a d
 
 ---
 
+## 2026-04-24 — Day 8 + 9: full moderation toolkit (Mute, Timeout, Kick) + hotbar icons
+
+### What got built
+
+- **Mute Gun (Day 8)** — slow status effect, end-to-end. New `Config.MUTE_*` block (range 20, cooldown 1.5s, slow factor 0.25, duration 5s, sound `rbxassetid://115994842117368`). New `MuteEnemy` RemoteEvent. New `Effects.MuteEffect(position)` — blue particle burst + sound. New `ServerScriptService/Enemies/MuteHandler.server.lua` validates `IsEnemy` attr, `IsDescendantOf(workspace)`, `Magnitude <= MUTE_RANGE * 1.5`, per-player cooldown, then sets `MutedUntil` (number) and `OriginalColor` (Color3) attributes on the enemy and recolors it to `Color3.fromRGB(70, 150, 255)`. New `StarterPack/MuteGun/` Tool — blue Part Handle, `MuteGunScript.client.lua` mirrors BanHammer's closest-target picker. `EnemySpawner.server.lua` heartbeat now reads `MutedUntil` and applies `MUTE_SLOW_FACTOR` while active, restores `OriginalColor` on expiry.
+- **Timeout Card (Day 8.5)** — full freeze, copy of Mute Gun pattern with `speed = 0`. New `TimeoutEnemy` RemoteEvent. New `Effects.TimeoutEffect` (yellow burst, sound `rbxassetid://9119366743`). New `TimeoutHandler.server.lua` writes `FrozenUntil` + `OriginalColor`. New yellow flat-card Tool in `StarterPack/TimeoutCard/`. EnemySpawner status pass refactored to handle stacking: when Timeout expires with Mute still active, color drops back to mute blue, not OriginalColor. Frozen enemies also stall at the zone instead of ticking damage. Tuned post-build: `COOLDOWN` 3.0 → 2.5, `DURATION` 2.5 → 4.0 — freeze now saves more distance per cast (4.0s × 100%) than mute (5.0s × 75% = 3.75s effective), so the panic button beats the steady CC.
+- **Kick Boot (Day 9)** — new pattern: AOE forward cone, instant impulse, non-destructive. New `KickEnemies` RemoteEvent (no payload — server re-derives cone from `HumanoidRootPart.CFrame.LookVector` so clients can't spoof angle). New `KickHandler.server.lua` filters enemies by `dir:Dot(LookVector) >= cos(30°)`, then writes `KickedUntil` (number) + `KickVelocity` (Vector3) per hit. Push direction is radial away from player so off-center enemies fan out, not bunch up. New `Effects.KickEffect` — green burst, sound `rbxassetid://140668097319606`. New `StarterPack/KickBoot/` Tool. EnemySpawner heartbeat got a priority ladder: **Kick > Timeout > Mute > seek**. Kicked enemies skip every other per-frame system, including zone damage, until the window expires. Tuned: `FORCE` 60 → 120 studs/s, `DURATION` 0.4 → 0.6s (≈72 studs of flight), particle burst bumped 20 → 40 sparks. Whiff fix shipped as separate commit: gate `Effects.KickEffect` on `hitCount > 0` so misses don't make sound.
+- **Hotbar tool icons** — replaced default cube icons with custom 1024×1024 PNGs (Ban Hammer, Mute Gun, Timeout Card, Kick Boot). Generated via ChatGPT image gen, iterated on the prompt to fix three failure modes: (1) baked light/gray backgrounds → require transparent PNG explicitly, (2) text on icon ("BAN" word) → forbid letters because they become red mush at 64px, (3) all-purple-on-dark-hotbar Mute Gun → require one accent color contrasting the body. Final prompt enforces square canvas, transparent background, subject touches two opposite edges with ≤4% padding, no fine details, and explicit style continuity across the set. Cropped each PNG with Photopea's Image → Trim before upload to Roblox. `Tool.TextureId` set in Studio (CLAUDE.md already documents this is Studio-only — Rojo doesn't own it).
+
+### Decisions made (and why)
+
+**Attribute-as-timer pattern for status effects, not a central StatusEffects module.**
+- Each handler writes one attribute pair: `<Name>Until` (number, for the timer) plus a snapshot for whatever it's about to mutate (`OriginalColor`, `KickVelocity`). EnemySpawner's heartbeat is the sole reader. One writer, one reader. Adding Stun or DoT later means: write a new attribute, add a branch in the heartbeat priority ladder. No central registry to keep in sync.
+- Tradeoff: when statuses interact (Timeout-while-Muted, Kick-while-anything), EnemySpawner has to know the precedence rules. With three statuses that's manageable; if it grows past five, this approach starts to creak.
+
+**Status priority ladder: Kick > Timeout > Mute > seek.**
+- Kick is an impulse — gating it behind status checks defeats "knock them flying." Timeout strictly dominates Mute (freeze > slow), so the strong one drives both visual and speed when both timers run. When Timeout expires while Mute is still ticking, color drops to mute blue, not OriginalColor — preserves the "still affected" visual without a third state machine.
+
+**Frozen enemies stall zone damage, not just movement.**
+- Edge case: enemy reaches zone, gets timed-out at the last moment. Natural read is "they're paused" — including paused on damage ticks. Five-line change. Without it, Timeout feels half-applied.
+
+**Kick payload is empty; server reads the player's facing direction.**
+- Client just calls `kickEnemies:FireServer()`. Server reads `HumanoidRootPart.CFrame.LookVector` directly. Stops a malicious client from sending a 360° cone parameter. Same authority principle as range validation, applied to geometry instead of distance.
+
+**Vector3 attribute for `KickVelocity`, not three numbers.**
+- Per-enemy push direction varies (radial from player), so couldn't compress to a single magnitude. Roblox attributes support Vector3 natively, so this just works. Worth knowing for future "directional" status effects.
+
+**Whiff fix: Kick effect only fires on hit, matching Ban / Mute / Timeout.**
+- Original behavior fired sound + particles on every cast regardless of contact — felt off because whiffs made noise but accomplished nothing. Inconsistent with the other three tools, which all gate effects on validation success. Now gated on `hitCount > 0`. Open question: should whiffs get a *visual* burst (cast confirmation) without sound? Filed as polish option, not shipped.
+
+**Tool icon prompt — explicit constraints beat aesthetic guidance.**
+- "Make it look cool" produces beautiful 1024×1024 art that becomes unreadable at 64×64. The constraints that mattered: no text on icon, subject touches two opposite edges, one accent color contrasting the body, transparent background, square canvas. Style continuity is enforced as a separate rule because a 4-icon set with mismatched outline weights reads as four random tools, not "the moderator's loadout."
+
+**Photopea trim before upload, not post-upload tweaking.**
+- Image generators always pad. Trimming the transparent border on the source PNG (Image → Trim → Transparent Pixels) is faster than fighting it in Studio with `ImageRectOffset` (which doesn't apply to `Tool.TextureId` anyway). One step, repeatable per icon.
+
+### What's intentionally not built yet
+
+- **Custom hotbar UI with hover/animated states.** The default Roblox CoreGui backpack only renders `Tool.TextureId` — no hover, no equip animation, and the blue selection ring overlaps the slot number when a tool is equipped. The user's reference grid (idle / hover / animated) needs a custom `ScreenGui` that disables `Enum.CoreGuiType.Backpack`, watches `Player.Backpack`, draws ImageButtons per tool, and runs TweenService on hover/equip. Real chunk of work — scheduled Phase 5 (Days 23–24, "UI cleanup"). Default hotbar deferred until then.
+- **Mute Gun → real aim-and-shoot.** Currently picks closest `IsEnemy` part in a 20-stud sphere. Doesn't feel like a gun. Already filed in `docs/plan.md` §9 backlog with three upgrade paths (mouse raycast / forward cone / projectile).
+- **Kick whiff visual feedback.** Now silent on miss. A visual-only burst (no sound) would confirm the cast went through without re-introducing audio spam. Two-line change, deferred.
+- **Kick Y-axis lift.** Enemy `BodyVelocity.MaxForce.Y = 0`, so any upward push gets ignored by the physics. Cartoon-y vertical pop would make Kick more dramatic but requires temporarily raising MaxForce.Y during the kick window. Current horizontal-only push already reads as chunky after the FORCE/DURATION tune.
+- **Days 9–10 enemy variety.** Teleporter enemies that warp forward 10 studs every few seconds, splitter enemies that spawn two smaller ones when banned, path variation. Real Day 9–10 scope; this session shipped tools instead.
+
+### Blockers for next session
+
+- None. Toolkit + icons are stable. Days 9–10 enemy variety is fully unblocked.
+
+### Hooks for the post
+
+Pick one. Not all.
+
+- **"One writer, one reader: status effects without a manager class"** — the attribute-as-timer pattern across Mute → Timeout → Kick. Why it stays clean without a central StatusEffects module, where it'll break (when two effects need to write the same attribute), and the precedence rules baked into EnemySpawner.
+- **"Kick > Timeout > Mute: a status priority ladder in 30 lines"** — three different effect types (slow, freeze, impulse) coexist via one heartbeat with explicit precedence. The order matters: the impulse has to run first or it gets overwritten by the slow/freeze logic.
+- **"Empty payload kick: never trust client geometry"** — why the Kick RemoteEvent sends nothing and the server reads the player's `LookVector` directly. Same principle as range validation, applied to angle. The vulnerability if you don't.
+- **"Whiffs need feedback or they don't"** — the bug (sound on miss) and the half-fix (now totally silent on miss). Honest answer is visual-without-audio on whiff, but the half-fix matched the other three tools, so it shipped first.
+- **"Why your Roblox tool icon looks tiny: it's not the asset, it's the padding"** — Photopea trim workflow + the prompt rule that AI image generators always pad. The 30-second fix that makes a 1024×1024 PNG actually fill a 60×60 hotbar slot.
+- **"TextureId is Studio-only and that's fine"** — when to fight Rojo and when to live with one-click Studio steps. Tool icons are Studio-side because there's no clean Rojo path for image asset IDs.
+
+---
+
 ## 2026-04-23 — Day 7: hit flash, camera shake, swing animation, visible hammer
 
 ### What got built
