@@ -4,6 +4,6 @@
     "RequiresHandle": true,
     "CanBeDropped": false,
     "ManualActivationOnly": false,
-    "ToolTip": "Kick"
+    "ToolTip": "Kick Boot"
   }
 }
