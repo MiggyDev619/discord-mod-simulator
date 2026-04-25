@@ -67,6 +67,7 @@ Config.KICK_SOUND_ID         = "rbxassetid://140668097319606"
 Config.KICK_SOUND_VOLUME     = 0.8
 
 -- Wave system
+Config.PRE_WAVE_DELAY        = 2     -- seconds before wave 1 starts; covers client boot + remote connect
 Config.WAVE_ENEMY_BASE       = 5     -- enemies in wave 1
 Config.WAVE_ENEMY_SCALE      = 3     -- additional enemies added each wave
 Config.WAVE_SPEED_SCALE      = 1.15  -- multiply enemy speed each wave (compounding)

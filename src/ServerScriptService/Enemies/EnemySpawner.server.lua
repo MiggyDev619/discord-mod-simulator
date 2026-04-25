@@ -24,9 +24,16 @@ local serverZone = map:WaitForChild("ServerZone")
 
 local MUTE_COLOR = Color3.fromRGB(70, 150, 255)
 
-local activeEnemies     = {}
+local activeEnemies      = {}
 local lastBroadcastCount = -1
-local lastBanTime       = {}  -- [player] = tick of last accepted ban
+local lastBanTime        = {}  -- [player] = tick of last accepted ban
+
+-- Wave-remaining counter — what the player UI needs. Tracks the *total* number
+-- of enemies still to be dealt with this wave (pending spawns + alive enemies +
+-- pending Splitter children). Reset on wave start, bumped when a Splitter
+-- spawns (since each will produce children when banned), decremented on any
+-- enemy death. Differs from #activeEnemies, which flickers between spawn ticks.
+local waveRemaining = 0
 
 local ENEMY_TYPES = {
 	Troll = {
@@ -114,6 +121,13 @@ local function spawnEnemy(typeName, speedMultiplier, spawnPos, sizeOverride, spe
 		nextTeleport   = nextTeleport,
 	})
 
+	-- Splitter parents promise N future children — those count toward wave-remaining
+	-- as soon as the parent appears, so the UI reflects what the player has to deal
+	-- with. SplitterChild spawns don't bump the count: they were pre-counted here.
+	if typeName == "Splitter" then
+		waveRemaining = waveRemaining + Config.SPLITTER_CHILD_COUNT
+	end
+
 	print("[EnemySpawner] Spawned", typeName, "| speed:", speed, "| active:", #activeEnemies)
 end
 
@@ -131,6 +145,22 @@ countFunc.OnInvoke = function()
 	return #activeEnemies
 end
 
+-- RoundManager calls this at wave start with the wave's scheduled enemy count.
+-- Resetting unconditionally protects against any drift left by prior waves.
+-- Broadcasting here (in addition to the heartbeat dedup) closes the 1-frame
+-- gap between WaveStarted firing and the heartbeat noticing the new value —
+-- without it, wave 1's first render lands with enemyCount=0 on the client.
+local setWaveRemainingFunc = Instance.new("BindableFunction")
+setWaveRemainingFunc.Name     = "SetWaveRemaining"
+setWaveRemainingFunc.Parent   = script
+setWaveRemainingFunc.OnInvoke = function(n)
+	waveRemaining = n
+	if waveRemaining ~= lastBroadcastCount then
+		lastBroadcastCount = waveRemaining
+		enemyCountChanged:FireAllClients(waveRemaining)
+	end
+end
+
 RunService.Heartbeat:Connect(function(dt)
 	if GameManager.IsGameOver() then return end
 
@@ -143,6 +173,7 @@ RunService.Heartbeat:Connect(function(dt)
 
 		if not enemy or not enemy.Parent then
 			table.remove(activeEnemies, i)
+			waveRemaining = math.max(0, waveRemaining - 1)
 			continue
 		end
 
@@ -236,6 +267,7 @@ RunService.Heartbeat:Connect(function(dt)
 					GameManager.TakeDamage(Config.SERVER_DAMAGE)
 					enemy:Destroy()
 					table.remove(activeEnemies, i)
+					waveRemaining = math.max(0, waveRemaining - 1)
 				end
 			end
 		else
@@ -243,11 +275,11 @@ RunService.Heartbeat:Connect(function(dt)
 		end
 	end
 
-	-- Broadcast enemy count once per frame when it changes. Cheaper than firing
+	-- Broadcast wave-remaining once per frame when it changes. Cheaper than firing
 	-- on every spawn/destroy, and clients only care about the latest value.
-	if #activeEnemies ~= lastBroadcastCount then
-		lastBroadcastCount = #activeEnemies
-		enemyCountChanged:FireAllClients(lastBroadcastCount)
+	if waveRemaining ~= lastBroadcastCount then
+		lastBroadcastCount = waveRemaining
+		enemyCountChanged:FireAllClients(waveRemaining)
 	end
 end)
 

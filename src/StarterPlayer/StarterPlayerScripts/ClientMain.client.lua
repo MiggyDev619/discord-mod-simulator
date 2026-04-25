@@ -126,9 +126,54 @@ enemyCountChanged.OnClientEvent:Connect(function(count)
 end)
 
 -- Currency + upgrade button
+local CURRENCY_GOLD       = Color3.fromRGB(255, 215, 0)
+local CURRENCY_FLASH      = Color3.fromRGB(255, 255, 180)
+local CURRENCY_PULSE_INFO = TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out, 0, true)
+local FLOATER_INFO        = TweenInfo.new(0.7, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+
+local lastCoins = 0
+
+local function spawnCoinFloater(delta)
+	-- Floater is parented to the currency label so it follows if the label moves.
+	-- Anchored top-right of the label, drifts up while fading.
+	local floater = Instance.new("TextLabel")
+	floater.Name                   = "Floater"
+	floater.Size                   = UDim2.new(0, 80, 0, 28)
+	floater.Position               = UDim2.new(1, 4, 0, 6)
+	floater.AnchorPoint            = Vector2.new(0, 0)
+	floater.BackgroundTransparency = 1
+	floater.Text                   = "+" .. delta
+	floater.TextColor3             = CURRENCY_GOLD
+	floater.TextStrokeColor3       = Color3.fromRGB(0, 0, 0)
+	floater.TextStrokeTransparency = 0.3
+	floater.Font                   = Enum.Font.GothamBold
+	floater.TextScaled             = true
+	floater.TextXAlignment         = Enum.TextXAlignment.Left
+	floater.Parent                 = currencyLabel
+
+	TweenService:Create(floater, FLOATER_INFO, {
+		Position               = UDim2.new(1, 4, 0, -28),
+		TextTransparency       = 1,
+		TextStrokeTransparency = 1,
+	}):Play()
+
+	task.delay(FLOATER_INFO.Time, function()
+		floater:Destroy()
+	end)
+end
+
 local function updateCurrency()
 	local coins = player:GetAttribute("Coins") or 0
+	local delta = coins - lastCoins
 	currencyLabel.Text = "Coins: " .. coins
+	if delta > 0 then
+		-- Brief color flash on the main label, plus a +N floater for the gain amount.
+		TweenService:Create(currencyLabel, CURRENCY_PULSE_INFO, {
+			TextColor3 = CURRENCY_FLASH,
+		}):Play()
+		spawnCoinFloater(delta)
+	end
+	lastCoins = coins
 end
 
 local function updateUpgradeButton()
@@ -150,6 +195,9 @@ end)
 player:GetAttributeChangedSignal("Coins"):Connect(updateCurrency)
 player:GetAttributeChangedSignal("CooldownLevel"):Connect(updateUpgradeButton)
 
+-- Seed lastCoins to the current value so the initial render doesn't spawn a
+-- "+N" floater for whatever amount the player loaded in with.
+lastCoins = player:GetAttribute("Coins") or 0
 updateCurrency()
 updateUpgradeButton()
 
