@@ -11,72 +11,53 @@ Raw build notes for the Discord Mod Simulator Roblox project, structured for a d
 
 ---
 
-## 2026-04-25 — Content planning sprint: 10 clips for week-one
+## 2026-04-25 — Wave 1 "N left" race fix
 
-> Non-code session today. **Important context gap**: git history shows three dev-day commits without DEVLOG entries — `a419aca` Day 9 (Teleporter enemy + Kick aim fix), `a6c3229` Day 10 (Splitter enemy), `6e50c6c` Day 11 (UI polish v1). The previous entry (Day 8+9, dated 2026-04-24) only covered the toolkit/icons portion of Day 9. Those three days need DEVLOG entries backfilled from commit diffs — flagged in "Blockers for next session" below.
+> Bugfix follow-up to Day 11 UI polish (`6e50c6c`). Same calendar session as the content-planning sprint that lives in `content-engine/DEVLOG-NOTES.md` (clips work moved there); split out because this is code, not planning.
 
 ### What got built
 
-- **`docs/clips.md`** — working planning document for the first 10 short-form video clips under the MiggyDev faceless gamedev brand. Per-clip specs (audience, hook copy, body, caption shape, why-it-works, recording requirements), the full posting schedule (Mon/Wed/Fri × ~3.3 weeks), the Sunday batch capture session plan, and a cut-to-6 list for if reality eats four slots.
-- **Audience split**: 5 player-facing / 5 dev-facing. Ordered by hook strength (loadout reveal lands first; Phase 1 recap lands tenth) — strongest scroll-stopper at the top because "more from this account" surfaces clip 01 to anyone who finds 02–10 first.
-- **Mix targets met**: three broken-or-fixed framings (camera shake, whiff bug, icon iteration), one honestly-imperfect anchor (the still-open whiff question, slot 5), one Phase 1 recap (slot 10), two code-on-screen-as-primary slots (camera shake, empty packet) — at the cap, not over it.
-- **Source material mined from this DEVLOG**: the existing per-entry "Hooks for the post" lists were already half-content. Day 7 (camera shake), Day 8+9 (status priority + whiff bug + icon iteration + empty-payload kick), Day 5 (IsGameOver / Phase 1 close), Day 4 (currency/attributes), Day 2 (server health / SERVER DEAD), Day 3 (Spammer wave 3 sweat). Most lifted cleanly with a player-audience reframe.
+- **`Config.PRE_WAVE_DELAY = 2`** — new tunable, seconds the server waits after the first player joins before starting wave 1.
+- **`RoundManager.server.lua` waits before wave 1**: `if #Players:GetPlayers() == 0 then Players.PlayerAdded:Wait() end` followed by `task.wait(Config.PRE_WAVE_DELAY)` at the top of the wave-loop `task.spawn`. Imports `Players` service.
+- **`WaveLabel.model.json`** — width 240 → 280px, added `TextTruncate: "AtEnd"`. Cheap layout headroom.
+- **`SetWaveRemaining` BindableFunction in `EnemySpawner`** also broadcasts `EnemyCountChanged` immediately on invoke (in addition to the heartbeat dedup) — defensive, kept even though it wasn't the root cause.
 
-### Audit findings (post-plan, same session)
+### What was NOT the cause (false leads, documented for next time)
 
-After locking the plan, audited each clip against the actual source. Material findings — full per-clip detail in `docs/clips.md` Audit section:
-
-- **Clip 02 caption is backwards.** Spec said "kick gets eaten by the slow." Actual status priority is **Kick > Timeout > Mute > seek** (`EnemySpawner.server.lua:181-195`, CLAUDE.md confirms). Kick OVERRIDES Mute, not the inverse. Caption rewrite required before posting.
-- **Clip 02 coin payoff doesn't fire on Kick.** Coins only awarded in `banEnemy.OnServerEvent` (`EnemySpawner.server.lua:315`); Kick is non-destructive. If the chain ends on Kick, "+20 coins" floater never appears. Decision needed: end on Kick (no payoff) or on Ban (real popup).
-- **Clip 03 has no "before" version in repo.** `git log --follow` shows BanHammerScript already used `Humanoid.CameraOffset` from the initial Days 1-7 commit. The CFrame-tween version was never committed — has to be **written from scratch** on a throwaway branch, not restored.
-- **Clip 08 premise is structurally false.** Current code sends `kickEnemies:FireServer(lookDir)` (Vector3 payload, not empty) and server reads the client's vector (not its own). Commit `a419aca` documents the switch from server-derived to client-derived as the intentional exception to server-authoritative. The whole "empty packet, server-derived geometry" hook is the inverse of reality. Recommend deferring to week 4+ for a deliberate reconception.
-- **Clips 04 & 07 oversell their visuals.** Both spec a "screen flash"; actual behavior is just a label color change in the existing HealthLabel/WaveLabel slots. No full-screen overlay exists. Decision: accept smaller visuals or add a 20-min `FlashOverlay` Frame that does double duty.
-- **Clip 10 caption claim ("~350 lines of Luau") needs verification** post-Days-9-11. Tally with `wc -l src/**/*.lua` before locking, or drop the clip entirely (recommended — push to week 4+ as a Phase 2 companion).
-- **Tool TextureIds are Studio-only state**, not in the repo. Confirm Sunday morning before recording — fresh place file would have blank icons.
-
-Hard blockers before camera rolls: reconceive Clip 08, rewrite Clip 02 caption, build a temp solo-spawn debug for Clip 02 isolation, verify Tool TextureIds in Studio. Six items of polish below those, in priority order, in `docs/clips.md`.
+- **Em-dash (`—`) glyph rendering.** Reverted. Wave 5 screenshot showed `Wave 5 / 5  —  1 left` rendering cleanly in Gotham — em-dash works fine. Hyphen swap was treating a symptom that didn't exist.
+- **Label width.** 240px was probably enough. 280px stays as headroom but didn't fix anything.
+- **Heartbeat broadcast timing.** The "1-frame gap" theory was wrong. Even immediate broadcast doesn't help if the client hasn't connected its `OnClientEvent` handler yet.
 
 ### Decisions made (and why)
 
-- **Content planning gets a non-numbered DEVLOG entry, not "Day 10".** The 30-day roadmap in `docs/plan.md` reserves day numbers for shipped code so progress stays comparable. Calling content-strategy work "Day 10" would mislabel the dev count and push the actual Day 10 (enemy variety) into Day 11. Honest framing > clean sequence.
+- **Root cause was a startup race, not a render bug.** Server scripts (`ServerScriptService`) boot before `StarterPlayerScripts` finish their `WaitForChild` chain and connect `OnClientEvent` handlers. RoundManager's `task.spawn` fires `WaveStarted` and `EnemyCountChanged` for wave 1 before the client's listeners exist. Roblox does NOT queue RemoteEvents fired before a connection is made — they're dropped silently. The label kept its `model.json` default text (`"Wave 1 / 5"`) because `renderWaveLabel` never ran. By wave 2+ the client was fully booted, so subsequent waves worked. The diagnostic was the wave-5 screenshot showing the suffix render perfectly: if rendering worked at all, the bug had to be at game-start specifically.
 
-- **`docs/clips.md`, not `CLIPS.md` at the repo root.** Same logic as `docs/plan.md` vs `CLAUDE.md`. Working planning documents that evolve weekly belong under `docs/`; project-meta files (README, CLAUDE.md, DEVLOG-NOTES) live at root and change rarely. Clips will be edited every Sunday for the next month.
+- **Fix on the server, not the client.** Two options were available: (a) delay wave 1 server-side, (b) implement a "client ready" signal that the server waits on. Picked (a) because it's two lines and zero new state machinery. (b) is correct for late-joining multiplayer players, but multiplayer is Phase 4+; not paying that cost now.
 
-- **5 player / 5 dev split, not weighted toward dev.** Dev material is stronger right now — concrete bugs, decisions, code. Player material is weaker but matters more long-term. Forcing equal coverage prevents the trap of only making clips about what's already easy to capture, which would lock the brand into "tutorials for other devs" with no path to actual players.
+- **`Players.PlayerAdded:Wait()` guard despite Studio always having a player.** Defensive. In Studio Playtest the player exists at script start, so the guard is a no-op. In a future server-with-no-players startup (closed test, dedicated server) it prevents the loop from racing past `PlayerAdded`. Free correctness.
 
-- **Loadout reveal is slot 01, not the Phase 1 recap.** A week-one account has no audience for a recap to compress. The strongest scroll-stopper has to land first because algorithmic surfacing favors recent uploads, and "more from this account" pulls clip 01 forward when a stranger discovers any other clip in the rotation.
+- **2 seconds, not 1 or 5.** 1s sometimes wasn't enough on cold Studio boots in casual testing. 5s is visibly long — the player stares at an empty map. 2s is the smallest value that hasn't reproduced the race so far. Tunable via `Config.PRE_WAVE_DELAY` if more headroom needed later.
 
-- **The whiff bug clip is non-negotiable, mid-rotation (slot 5).** Faceless dev accounts that show only polished wins lose trust within the first ten clips. One "here's what's still broken" slot — not at the start (sets the wrong tone) and not at the end (looks like an apology) — buys credibility for everything that surrounds it. Existing open question (visual-without-audio on whiff?) is real and ships honestly.
-
-- **Captions stay platform-agnostic in `clips.md`.** The per-platform rewrite (TikTok hashtag count vs IG vs X length limits vs Shorts pinned-comment style) is the `content-engine` `caption draft` command's job — currently a stub but the next vertical slice. Drafting platform-specific captions here would force a rewrite when that command lands.
+- **Three earlier fixes were treating symptoms.** Em-dash swap, label widening, immediate broadcast — none addressed the actual race. Kept the broadcast (cheap, defensive) and the label width (cheap, harmless), reverted the em-dash (it works). Lesson logged.
 
 ### What's intentionally not built yet
 
-- **The recording session itself.** Planned for Sunday, ~2 hours, all 10 clips' raw material captured in one batch. Detailed plan is in `docs/clips.md`. Two clips need temporarily-reverted code (camera-shake bad version, kick whiff with sound); budget ~10 min round-trip overhead.
-- **Editing pipeline.** Each clip needs an edit pass after capture — cyan/violet overlay text, MiggyDev corner mark, voiceover layered where applicable. Should happen on a separate day from recording; mode-switching mid-session degrades both.
-- **Per-platform caption variants.** Defer until `content-engine` `caption draft` lands.
+- **"Current wave state" RemoteFunction for late-joiners.** A new player joining mid-wave-3 wouldn't get `WaveStarted` or `EnemyCountChanged` until wave 4. Not building until multiplayer is in scope (Phase 4+).
+- **Client-ready handshake.** A `ClientReady:FireServer()` from `ClientMain` after all listeners are connected, with the server collecting readies before starting waves. Cleaner pattern for multiplayer but overengineered for a single-player Studio playtest.
 
-### Blockers for next session
-
-- **Re-evaluate `docs/clips.md` next session** now that Day 9–11 entries are backfilled (below). Teleporter, Splitter, and UI polish v1 are clip material — Splitter ban-spawning children is especially visual and stronger than at least one of the current 10 (likely clip 09, "Wave 3 sweat," which overlaps clip 04's coverage). Defer the clip-list revision to a focused turn rather than thrashing the plan now.
-- Sunday recording session needs ~2 uninterrupted hours and a quiet room for the three voiceover passes (whiff bug, victory, empty packet — ~30s combined audio).
-- Two captures require restoring removed code temporarily (camera-shake CFrame tween from Day 7 pre-fix; unconditional `Effects.KickEffect` from Day 9 pre-half-fix). Plan: `git stash` after capture, restore working tree before next dev day.
-
-### Hooks for the post (about the planning itself, separate from the clips' own hooks)
+### Hooks for the post
 
 Pick one. Not all.
 
-- **"Planning content for a faceless brand with zero audience"** — the constraints (faceless, low-key from the employer, 15–30s clips), the hard problem (week-one means strangers not followers), and the framework (player/dev split, hook-strength as ordering criterion). The strongest meta hook on this list.
-- **"DEVLOG hooks are clip seeds"** — the workflow itself. The "Hooks for the post" section that the user's template forces at the bottom of every DEVLOG entry was already half-content; clipping it for video is one more transformation, and DEVLOG entries are the cheapest content-planning tool I have.
-- **"Why the whiff bug clip is non-negotiable"** — authenticity math in a polish-heavy feed. The argument for one "here's what's broken" slot in every ten-clip rotation, and why slot 5 specifically.
-- **"Choosing the loadout reveal over the recap as clip 01"** — content-strategy as a real engineering decision. The trade-off: a recap pays off only if the audience exists; a loadout reveal works on a stranger.
-- **"Auditing your own content plan against the actual code"** — the meta-narrative that the audit itself was the most-valuable hour of this session. Two clips had wrong premises (one caption inverted, one entire clip false), one had a "before" version that never existed, and two oversold their visuals — none of which would have been caught without reading the source against the spec. The lesson: a content plan written from devlog notes alone is a draft. Audit before recording, always.
+- **"Server scripts boot before client scripts. Your wave 1 events are firing into the void."** — the actual gotcha. Most Roblox tutorials don't teach this; you find out the first time you ship a UI that renders perfectly on wave 2 and never on wave 1. Concrete, niche, devs will save it.
+- **"Three fixes that didn't work, one screenshot that did."** — the diagnostic story. Em-dash, label width, broadcast timing — all wrong theories. Wave 5 working is what reframed the problem. Lesson: when your fix doesn't fix it, the model is wrong, not the implementation.
+- **"Don't trust the model.json default text — if your renderer never runs, that's what your users see."** — a UI lesson, broader than this bug. Default text in a `.model.json` is a silent fallback that masks "my code never ran" as "my code ran with stale data." Empty string defaults force the bug to surface.
 
 ---
 
 ## 2026-04-25 — Day 11: UI polish v1 (health bar, live wave count, cooldown panel)
 
-> Backfilled from commit `6e50c6c` after the Day 9–11 gap was caught during the 2026-04-25 content-planning sprint.
+> Backfilled from commit `6e50c6c` after the Day 9–11 gap was caught during the 2026-04-25 content-planning sprint (lives in `content-engine/DEVLOG-NOTES.md`).
 
 ### What got built
 
@@ -122,7 +103,7 @@ Pick one. Not all.
 
 ## 2026-04-25 — Day 10: Splitter enemy
 
-> Backfilled from commit `a6c3229` after the Day 9–11 gap was caught during the 2026-04-25 content-planning sprint.
+> Backfilled from commit `a6c3229` after the Day 9–11 gap was caught during the 2026-04-25 content-planning sprint (lives in `content-engine/DEVLOG-NOTES.md`).
 
 ### What got built
 
@@ -165,7 +146,7 @@ Pick one. Not all.
 
 ## 2026-04-25 — Day 9: Teleporter enemy + Kick aim fix
 
-> Backfilled from commit `a419aca` after the Day 9–11 gap was caught during the 2026-04-25 content-planning sprint. The Day 8+9 entry below covers the toolkit/icons portion of Day 9; this entry covers the Teleporter and Kick aim fix that landed in the same commit but never made the previous entry.
+> Backfilled from commit `a419aca` after the Day 9–11 gap was caught during the 2026-04-25 content-planning sprint (lives in `content-engine/DEVLOG-NOTES.md`). The Day 8+9 entry below covers the toolkit/icons portion of Day 9; this entry covers the Teleporter and Kick aim fix that landed in the same commit but never made the previous entry.
 
 ### What got built
 
