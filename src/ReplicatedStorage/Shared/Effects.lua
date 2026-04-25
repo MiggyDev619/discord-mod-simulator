@@ -175,6 +175,41 @@ function Effects.TimeoutEffect(position)
 	Debris:AddItem(anchor, EFFECT_LIFETIME)
 end
 
+-- White/green shockwave at the player's feet when a Kick fires.
+-- Visualizes the AOE — fires once per cast regardless of how many enemies got hit.
+function Effects.KickEffect(position)
+	local anchor = createAnchor(position)
+
+	local emitter = Instance.new("ParticleEmitter")
+	emitter.Texture       = "rbxasset://textures/particles/sparkles_main.dds"
+	emitter.Color         = ColorSequence.new(Color3.fromRGB(180, 255, 200))
+	emitter.Size          = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 2.2),
+		NumberSequenceKeypoint.new(1, 0),
+	})
+	emitter.Transparency  = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0),
+		NumberSequenceKeypoint.new(1, 1),
+	})
+	emitter.Lifetime      = NumberRange.new(0.35, 0.7)
+	emitter.Speed         = NumberRange.new(32, 52)
+	emitter.SpreadAngle   = Vector2.new(180, 180)
+	emitter.Rate          = 0
+	emitter.LightEmission = 0.7
+	emitter.Parent        = anchor
+	emitter:Emit(40)
+
+	if Config.KICK_SOUND_ID ~= "" then
+		local sound   = Instance.new("Sound")
+		sound.SoundId = Config.KICK_SOUND_ID
+		sound.Volume  = Config.KICK_SOUND_VOLUME
+		sound.Parent  = anchor
+		sound:Play()
+	end
+
+	Debris:AddItem(anchor, EFFECT_LIFETIME)
+end
+
 -- Flashes an enemy part white/neon, freezes it in place, and schedules its destruction.
 -- Clears IsEnemy so other systems stop seeing it as targetable mid-flash.
 function Effects.HitFlash(part)

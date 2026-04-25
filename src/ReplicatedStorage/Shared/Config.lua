@@ -39,6 +39,15 @@ Config.TIMEOUT_DURATION      = 4.0   -- > mute's effective 3.75s of saved distan
 Config.TIMEOUT_SOUND_ID      = "rbxassetid://9119366743"
 Config.TIMEOUT_SOUND_VOLUME  = 0.7
 
+-- Kick Boot (AOE pushback in a forward cone; non-destructive crowd control)
+Config.KICK_RANGE            = 12    -- short — melee-ish
+Config.KICK_CONE_ANGLE       = 60    -- degrees, full cone (30° to either side of LookVector)
+Config.KICK_COOLDOWN         = 1.0   -- aggressive button, fast reuse
+Config.KICK_FORCE            = 120   -- studs/sec pushback speed (≈72 studs distance over the window)
+Config.KICK_DURATION         = 0.6   -- seconds BodyVelocity is overridden before normal walk resumes
+Config.KICK_SOUND_ID         = "rbxassetid://140668097319606"
+Config.KICK_SOUND_VOLUME     = 0.8
+
 -- Wave system
 Config.WAVE_ENEMY_BASE       = 5     -- enemies in wave 1
 Config.WAVE_ENEMY_SCALE      = 3     -- additional enemies added each wave

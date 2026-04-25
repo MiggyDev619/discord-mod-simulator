@@ -108,6 +108,23 @@ RunService.Heartbeat:Connect(function(dt)
 			continue
 		end
 
+		-- Kick takes top priority: while KickedUntil > now, BodyVelocity is driven by
+		-- KickVelocity and every other per-frame system (mute/freeze/seek/damage) is skipped.
+		-- When the kick window expires, attributes are cleared and normal movement resumes.
+		local kickedUntil = enemy:GetAttribute("KickedUntil")
+		if kickedUntil then
+			if now < kickedUntil then
+				local kv = enemy:GetAttribute("KickVelocity")
+				if kv then
+					data.velocity.Velocity = kv
+				end
+				continue
+			else
+				enemy:SetAttribute("KickedUntil", nil)
+				enemy:SetAttribute("KickVelocity", nil)
+			end
+		end
+
 		-- Status effects: Timeout (freeze) overrides Mute (slow). Both timers can stack;
 		-- when the stronger one expires, color drops back to the weaker active effect,
 		-- and finally to OriginalColor once nothing is active.
