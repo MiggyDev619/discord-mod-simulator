@@ -24,6 +24,16 @@ Config.TELEPORTER_DISTANCE   = 22    -- studs jumped per warp; big enough to fee
 Config.TELEPORTER_SOUND_ID       = "rbxassetid://133226202202712"
 Config.TELEPORTER_SOUND_VOLUME   = 0.7
 
+-- Splitter enemy (banning it spawns smaller, faster children — "one spam account, two more appear")
+Config.SPLITTER_SPEED            = 14    -- between Troll and Spammer
+Config.SPLITTER_HEALTH           = 20
+Config.SPLITTER_CHILD_COUNT      = 2     -- children spawned per ban
+Config.SPLITTER_CHILD_SPEED_RATIO = 1.35 -- child speed = parent's effective speed * this (preserves wave scaling)
+Config.SPLITTER_CHILD_SIZE_RATIO  = 0.55 -- visual: children are clearly smaller
+Config.SPLITTER_CHILD_OFFSET      = 4    -- studs apart when children appear (so they don't overlap)
+Config.SPLITTER_SOUND_ID          = "rbxassetid://127599335301017"
+Config.SPLITTER_SOUND_VOLUME      = 0.7
+
 -- Spawning
 Config.SPAWN_INTERVAL        = 2.5   -- seconds between each spawn within a wave
 
@@ -63,12 +73,15 @@ Config.WAVE_SPEED_SCALE      = 1.15  -- multiply enemy speed each wave (compound
 Config.WAVE_BREAK_DURATION   = 8     -- seconds of break between waves
 Config.SPAMMER_CHANCE        = 0.3   -- probability (0–1) an enemy is a Spammer (wave 2+)
 Config.TELEPORTER_CHANCE     = 0.2   -- probability (0–1) an enemy is a Teleporter (wave 3+)
+Config.SPLITTER_CHANCE       = 0.15  -- probability (0–1) an enemy is a Splitter (wave 4+)
 Config.WAVES_TO_WIN          = 5     -- survive this many waves and the game declares victory
 
 -- Currency (awarded on ban)
 Config.COIN_TROLL            = 10
 Config.COIN_SPAMMER          = 20
 Config.COIN_TELEPORTER       = 25   -- harder to catch — pays a bit more than spammer
+Config.COIN_SPLITTER         = 30   -- dangerous if left alive — biggest non-child reward
+Config.COIN_SPLITTER_CHILD   = 5    -- low — keeps splitter from being a coin farm
 
 -- Upgrades
 Config.UPGRADE_COOLDOWN_COST        = 50   -- base cost; scales linearly per level (lvl 1 = 50, lvl 2 = 100, lvl 3 = 150)

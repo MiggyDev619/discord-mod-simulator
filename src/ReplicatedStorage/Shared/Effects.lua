@@ -256,6 +256,41 @@ function Effects.KickEffect(position)
 	Debris:AddItem(anchor, EFFECT_LIFETIME)
 end
 
+-- Pink particle puff + optional sound at the position of a banned Splitter.
+-- Fires once per split (not per child) — sells the "one becomes many" beat.
+function Effects.SplitEffect(position)
+	local anchor = createAnchor(position)
+
+	local emitter = Instance.new("ParticleEmitter")
+	emitter.Texture       = "rbxasset://textures/particles/sparkles_main.dds"
+	emitter.Color         = ColorSequence.new(Color3.fromRGB(255, 120, 200))
+	emitter.Size          = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 1.8),
+		NumberSequenceKeypoint.new(1, 0),
+	})
+	emitter.Transparency  = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0),
+		NumberSequenceKeypoint.new(1, 1),
+	})
+	emitter.Lifetime      = NumberRange.new(0.3, 0.6)
+	emitter.Speed         = NumberRange.new(16, 26)
+	emitter.SpreadAngle   = Vector2.new(180, 180)
+	emitter.Rate          = 0
+	emitter.LightEmission = 0.6
+	emitter.Parent        = anchor
+	emitter:Emit(30)
+
+	if Config.SPLITTER_SOUND_ID ~= "" then
+		local sound   = Instance.new("Sound")
+		sound.SoundId = Config.SPLITTER_SOUND_ID
+		sound.Volume  = Config.SPLITTER_SOUND_VOLUME
+		sound.Parent  = anchor
+		sound:Play()
+	end
+
+	Debris:AddItem(anchor, EFFECT_LIFETIME)
+end
+
 -- Flashes an enemy part white/neon, freezes it in place, and schedules its destruction.
 -- Clears IsEnemy so other systems stop seeing it as targetable mid-flash.
 function Effects.HitFlash(part)

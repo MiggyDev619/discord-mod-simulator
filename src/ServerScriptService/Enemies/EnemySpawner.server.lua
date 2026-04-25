@@ -48,16 +48,35 @@ local ENEMY_TYPES = {
 		size   = Vector3.new(2.5, 3.5, 2.5),
 		reward = Config.COIN_TELEPORTER,
 	},
+	Splitter = {
+		speed  = Config.SPLITTER_SPEED,
+		health = Config.SPLITTER_HEALTH,
+		color  = BrickColor.new("Hot pink"),
+		size   = Vector3.new(3.2, 4.2, 3.2),  -- slightly bigger than Troll, reads as "parent"
+		reward = Config.COIN_SPLITTER,
+	},
+	-- Spawned only as children of a banned Splitter (not picked by RoundManager).
+	-- Size and speed are derived per-spawn from the parent — definition values are fallbacks.
+	SplitterChild = {
+		speed  = Config.SPLITTER_SPEED,
+		health = Config.SPLITTER_HEALTH,
+		color  = BrickColor.new("Carnation pink"),
+		size   = Vector3.new(2, 2.6, 2),
+		reward = Config.COIN_SPLITTER_CHILD,
+	},
 }
 
-local function spawnEnemy(typeName, speedMultiplier)
+-- spawnPos / sizeOverride / speedOverride are used by the Splitter ban hook to
+-- spawn children at the parent's death position with derived stats. RoundManager
+-- only ever calls with (typeName, speedMultiplier).
+local function spawnEnemy(typeName, speedMultiplier, spawnPos, sizeOverride, speedOverride)
 	if GameManager.IsGameOver() then return end
 
 	local def = ENEMY_TYPES[typeName] or ENEMY_TYPES.Troll
 
 	local enemy = Instance.new("Part")
 	enemy.Name       = typeName
-	enemy.Size       = def.size
+	enemy.Size       = sizeOverride or def.size
 	enemy.BrickColor = def.color
 	enemy.Anchored   = false
 	enemy.CanCollide = true
@@ -70,12 +89,16 @@ local function spawnEnemy(typeName, speedMultiplier)
 	velocity.Velocity = Vector3.new(0, 0, 0)
 	velocity.Parent   = enemy
 
-	enemy.Position = enemyStart.Position + Vector3.new(
-		math.random(-4, 4), 2, math.random(-4, 4)
-	)
+	if spawnPos then
+		enemy.Position = spawnPos
+	else
+		enemy.Position = enemyStart.Position + Vector3.new(
+			math.random(-4, 4), 2, math.random(-4, 4)
+		)
+	end
 	enemy.Parent = workspace
 
-	local speed = def.speed * (speedMultiplier or 1)
+	local speed = speedOverride or (def.speed * (speedMultiplier or 1))
 	local nextTeleport = nil
 	if typeName == "Teleporter" then
 		nextTeleport = tick() + Config.TELEPORTER_INTERVAL
@@ -249,6 +272,32 @@ banEnemy.OnServerEvent:Connect(function(player, enemyPart)
 	local reward  = enemyPart:GetAttribute("Reward") or Config.COIN_TROLL
 	local banPos  = enemyPart.Position
 	CurrencyManager.AddCoins(player, reward)
+
+	-- Splitter hook: before the parent is flashed/destroyed, spawn its children
+	-- at the ban position with sizes/speeds derived from the parent. Children are
+	-- SplitterChild type, which RoundManager never rolls — they never recurse.
+	if enemyPart.Name == "Splitter" then
+		local parentData
+		for _, d in ipairs(activeEnemies) do
+			if d.part == enemyPart then
+				parentData = d
+				break
+			end
+		end
+		local parentSpeed = parentData and parentData.speed or Config.SPLITTER_SPEED
+		local childSpeed  = parentSpeed * Config.SPLITTER_CHILD_SPEED_RATIO
+		local childSize   = enemyPart.Size * Config.SPLITTER_CHILD_SIZE_RATIO
+		for j = 1, Config.SPLITTER_CHILD_COUNT do
+			local angle  = (j - 1) * (2 * math.pi / Config.SPLITTER_CHILD_COUNT)
+			local offset = Vector3.new(
+				math.cos(angle) * Config.SPLITTER_CHILD_OFFSET,
+				0,
+				math.sin(angle) * Config.SPLITTER_CHILD_OFFSET
+			)
+			spawnEnemy("SplitterChild", nil, banPos + offset, childSize, childSpeed)
+		end
+		Effects.SplitEffect(banPos)
+	end
 
 	print(string.format("[EnemySpawner] %s banned %s (+%d coins)", player.Name, enemyPart.Name, reward))
 	Effects.HitFlash(enemyPart)
