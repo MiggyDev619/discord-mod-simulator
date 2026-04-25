@@ -8,6 +8,53 @@ Raw build notes for the Discord Mod Simulator Roblox project, structured for a d
 - The devlog session should pick one or two **narrative angles** from the "Hooks for the post" list per section — not try to cover everything.
 - Voice: raw material, not a draft.
 - Newest entries at the top.
+- **BACKLOG** lives at the bottom — items deferred or filed for later reconception. Not dated.
+
+---
+
+## 2026-04-25 — Sunday recording prep: cuts, decisions, polish
+
+> Pre-production pass for the 10-clip Sunday recording session. Audit (commit `b68a82a`) flagged 4 hard blockers; this session resolves them via cuts and small code fixes. Same calendar day as the wave-1 race fix and Day 9–11 backfills — split out because this is content-prep, not gameplay code.
+
+### Decisions made (and why)
+
+- **Clip 02 caption rewritten + payoff dropped.** Original draft ("kick gets eaten by the slow") inverts the actual priority ladder (`Kick > Timeout > Mute > seek`). Kick *overrides* mute, doesn't get eaten. The "+20 coins" final frame was also impossible — `Kick` is non-destructive (`KickHandler.server.lua` doesn't call `CurrencyManager.AddCoins`); only Ban awards coins. New caption: **"Three statuses, one Spammer, one launch into the void."** Hashtags: `#robloxgame #robloxdev #gamefeel`. Demonstrates the visual without making a false mechanical claim.
+
+- **Clip 08 OUT for Sunday → filed in BACKLOG.** Premise was "empty packet, server-derived geometry" — but `CLAUDE.md` documents the kick aim as the explicit *exception* to server-authoritative: client sends `Workspace.CurrentCamera.CFrame.LookVector` (flattened) as a Vector3 payload, server uses that vector. Was never not the case in committed history. Pitching it as a server-derived design lesson would be a lie. Reconception path: pivot to `BanEnemy` (truly server-validated — server checks `IsEnemy`, range, cooldown before destroying) or write a different "trust boundary" angle.
+
+- **Clip 10 OUT for Sunday → reschedule to Phase 2 close.** Animated milestone-table is editor-heavy with no committed scaffold-only state to film for "Day 1." Recap clips work better with an audience to recap *for*. Better as a "Phase 2 in N days" companion when Phase 2 closes (Day 12).
+
+- **Source line count tally**: **1,691 Lua LOC across 15 `.lua` files** in `src/`. Recorded for future Clip 10 caption use.
+
+### What got built (same session, content-driven)
+
+- **`KickBoot/init.meta.json` ToolTip "Kick" → "Kick Boot"** (commit `4b2956b`). Hotbar consistency for Clip 01 — every other tool's ToolTip uses the full name.
+- **`MainUI/FlashOverlay` full-screen flash on gameOver / gameWon** (commit `ac6e0d2`). New `Frame` model.json (full-screen, `BackgroundTransparency=1` default, `ZIndex=100`, `Active=false`); `ClientMain` tweens it red on `gameOver` / green on `gameWon` with shape `0.15s fade-in → 0.3s hold → 0.4s fade-out`. Real game improvement, not just a clip prop — the previous run-end "flash" was just a label color change. Used by Clip 04 (SERVER DEAD) and Clip 07 (VICTORY). NOT yet tested in Studio at time of commit — verify Sunday morning.
+
+### Decisions made (and why) — second batch
+
+- **`Active = false` on FlashOverlay**, not `Visible` toggling. Frame stays mounted the whole game, just transparent. Avoids the "first flash has a one-frame mount delay" failure mode. `Active = false` ensures the overlay doesn't sink input clicks (UpgradeButton stays clickable through it).
+
+- **`ZIndex = 100`**, not `ZIndex = 1`. Standard ScreenGui ZIndexBehavior is `Sibling`; the flash needs to render *over* the labels, not under them. 100 is arbitrary — picked high to leave room for future overlays (pause screen, settings) at 50.
+
+- **Color picks: red `(255, 70, 70)` and green `(80, 255, 140)`.** Match the existing run-end label text colors so the flash and the "SERVER DEAD" / "VICTORY" text feel like one event. Slightly brighter than `HEALTH_RED` so the flash reads as a panic-state, not a "low health" warning that the player might already be desensitized to.
+
+### Pre-production blockers cleared
+
+| # | Blocker | Resolution |
+|---|---------|------------|
+| 1 | Clip 02 caption inverted | Rewritten — see above |
+| 2 | Clip 02 +20 coin payoff impossible | Dropped from caption |
+| 3 | Clip 08 server-derived premise false | Cut from Sunday, filed in BACKLOG |
+| 4 | Clip 03 bad "before" version not in git history | Pre-write on `clip-recording-bad-shake` branch (next, this same session) |
+
+### Hooks for the post
+
+Pick one. Not all.
+
+- **"Pre-production audit found my own clip captions were lying about my own code."** — the meta-lesson. Three of ten captions had factual errors (Clip 02 inverted priority, Clip 08 false premise, Clip 02 impossible coin payoff). Lesson: audit captions against committed code, not against your mental model of how the system *should* work.
+- **"The flash overlay was a clip prop that turned into a real fix."** — flashOverlay was added because Clip 04/07 needed visual punch, but the previous run-end was genuinely too subtle (just a text color change). Sometimes the recording requirement is what surfaces the real polish gap.
+- **"Cutting clips before recording is cheaper than recutting after."** — three of ten clips deferred at audit time. Doing 7 right beats doing 10 wrong.
 
 ---
 
@@ -499,3 +546,26 @@ Pick one. Not all.
 
 - **"Day 1 of a 30-day Roblox build"** — scaffold recap, the Rojo setup, the folder layout decision, and what's intentionally deferred to Day 2.
 - **"Why I put Roblox source in git, not just the .rbxl"** — the argument for Rojo on a solo project, and the one bug (day 2) that vindicated it.
+
+---
+
+## BACKLOG
+
+Items deferred from a session for future reconception or reschedule. Not dated. Move back into a dated entry once they ship or are abandoned.
+
+### Clip 08 — server trust boundary
+
+- **Status:** Filed 2026-04-25, deferred from Sunday recording.
+- **Original premise (false):** "Empty packet, server-derived geometry — the client says 'I kicked' and the server figures out the rest."
+- **Why it's wrong:** Per `CLAUDE.md` and `KickHandler.server.lua`, kick aim is the *documented exception* to server-authoritative — the client sends a flattened `CFrame.LookVector` Vector3 payload because the server can't read camera state. `KickBootScript.client.lua:37` does `kickEnemies:FireServer(lookDir)`. Was never not the case in committed history.
+- **Reconception paths:**
+  - Pivot the clip to `BanEnemy` — actually server-validated (server checks `IsEnemy`, range ≤ `BAN_RANGE * 1.5`, server-side cooldown via `BanCooldown` attribute before destroying).
+  - Or: write a "trust boundaries" clip that *names* the kick exception explicitly — "the one place I let the client win, and why."
+- **Block before re-pitch:** decide which framing first; don't film without a clear angle.
+
+### Clip 10 — milestone recap / line count animation
+
+- **Status:** Filed 2026-04-25, rescheduled to end of Phase 2 (around Day 12 close).
+- **Why deferred:** Animated milestone-table is editor-heavy with no committed scaffold-only state for the "Day 1" frame. Recap clips work better with an established audience to recap *for*.
+- **Numbers cached (2026-04-25):** 1,691 Lua LOC across 15 `.lua` files in `src/`. Re-tally on the day.
+- **Re-pitch shape:** "Phase 2 in N days" companion piece — concrete deliverables list (8-tool toolkit, 4 enemy types, wave system, currency, upgrades v0, run-end states) over the line-count animation. Phase boundary, not arbitrary day boundary.
