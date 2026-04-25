@@ -54,7 +54,9 @@ kickEnemies.OnServerEvent:Connect(function(player)
 		"[KickHandler] %s kicked %d enemy(ies)",
 		player.Name, hitCount
 	))
-	Effects.KickEffect(origin + forward * 2 + Vector3.new(0, -1, 0))
+	if hitCount > 0 then
+		Effects.KickEffect(origin + forward * 2 + Vector3.new(0, -1, 0))
+	end
 end)
 
 Players.PlayerRemoving:Connect(function(player)
