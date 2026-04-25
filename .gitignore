@@ -12,3 +12,7 @@
 /*.rbxl.lock
 
 sourcemap.json
+
+# Recording / debug-only scripts (suffix convention — never committed)
+*.debug.client.lua
+*.debug.server.lua
