@@ -22,6 +22,20 @@ Raw build notes for the Discord Mod Simulator Roblox project, structured for a d
 - **Mix targets met**: three broken-or-fixed framings (camera shake, whiff bug, icon iteration), one honestly-imperfect anchor (the still-open whiff question, slot 5), one Phase 1 recap (slot 10), two code-on-screen-as-primary slots (camera shake, empty packet) — at the cap, not over it.
 - **Source material mined from this DEVLOG**: the existing per-entry "Hooks for the post" lists were already half-content. Day 7 (camera shake), Day 8+9 (status priority + whiff bug + icon iteration + empty-payload kick), Day 5 (IsGameOver / Phase 1 close), Day 4 (currency/attributes), Day 2 (server health / SERVER DEAD), Day 3 (Spammer wave 3 sweat). Most lifted cleanly with a player-audience reframe.
 
+### Audit findings (post-plan, same session)
+
+After locking the plan, audited each clip against the actual source. Material findings — full per-clip detail in `docs/clips.md` Audit section:
+
+- **Clip 02 caption is backwards.** Spec said "kick gets eaten by the slow." Actual status priority is **Kick > Timeout > Mute > seek** (`EnemySpawner.server.lua:181-195`, CLAUDE.md confirms). Kick OVERRIDES Mute, not the inverse. Caption rewrite required before posting.
+- **Clip 02 coin payoff doesn't fire on Kick.** Coins only awarded in `banEnemy.OnServerEvent` (`EnemySpawner.server.lua:315`); Kick is non-destructive. If the chain ends on Kick, "+20 coins" floater never appears. Decision needed: end on Kick (no payoff) or on Ban (real popup).
+- **Clip 03 has no "before" version in repo.** `git log --follow` shows BanHammerScript already used `Humanoid.CameraOffset` from the initial Days 1-7 commit. The CFrame-tween version was never committed — has to be **written from scratch** on a throwaway branch, not restored.
+- **Clip 08 premise is structurally false.** Current code sends `kickEnemies:FireServer(lookDir)` (Vector3 payload, not empty) and server reads the client's vector (not its own). Commit `a419aca` documents the switch from server-derived to client-derived as the intentional exception to server-authoritative. The whole "empty packet, server-derived geometry" hook is the inverse of reality. Recommend deferring to week 4+ for a deliberate reconception.
+- **Clips 04 & 07 oversell their visuals.** Both spec a "screen flash"; actual behavior is just a label color change in the existing HealthLabel/WaveLabel slots. No full-screen overlay exists. Decision: accept smaller visuals or add a 20-min `FlashOverlay` Frame that does double duty.
+- **Clip 10 caption claim ("~350 lines of Luau") needs verification** post-Days-9-11. Tally with `wc -l src/**/*.lua` before locking, or drop the clip entirely (recommended — push to week 4+ as a Phase 2 companion).
+- **Tool TextureIds are Studio-only state**, not in the repo. Confirm Sunday morning before recording — fresh place file would have blank icons.
+
+Hard blockers before camera rolls: reconceive Clip 08, rewrite Clip 02 caption, build a temp solo-spawn debug for Clip 02 isolation, verify Tool TextureIds in Studio. Six items of polish below those, in priority order, in `docs/clips.md`.
+
 ### Decisions made (and why)
 
 - **Content planning gets a non-numbered DEVLOG entry, not "Day 10".** The 30-day roadmap in `docs/plan.md` reserves day numbers for shipped code so progress stays comparable. Calling content-strategy work "Day 10" would mislabel the dev count and push the actual Day 10 (enemy variety) into Day 11. Honest framing > clean sequence.
@@ -56,6 +70,7 @@ Pick one. Not all.
 - **"DEVLOG hooks are clip seeds"** — the workflow itself. The "Hooks for the post" section that the user's template forces at the bottom of every DEVLOG entry was already half-content; clipping it for video is one more transformation, and DEVLOG entries are the cheapest content-planning tool I have.
 - **"Why the whiff bug clip is non-negotiable"** — authenticity math in a polish-heavy feed. The argument for one "here's what's broken" slot in every ten-clip rotation, and why slot 5 specifically.
 - **"Choosing the loadout reveal over the recap as clip 01"** — content-strategy as a real engineering decision. The trade-off: a recap pays off only if the audience exists; a loadout reveal works on a stranger.
+- **"Auditing your own content plan against the actual code"** — the meta-narrative that the audit itself was the most-valuable hour of this session. Two clips had wrong premises (one caption inverted, one entire clip false), one had a "before" version that never existed, and two oversold their visuals — none of which would have been caught without reading the source against the spec. The lesson: a content plan written from devlog notes alone is a draft. Audit before recording, always.
 
 ---
 
