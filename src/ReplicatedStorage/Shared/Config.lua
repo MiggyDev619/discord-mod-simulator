@@ -16,6 +16,14 @@ Config.ENEMY_DAMAGE_INTERVAL = 1     -- seconds between damage ticks at zone
 Config.SPAMMER_SPEED         = 24
 Config.SPAMMER_HEALTH        = 10
 
+-- Teleporter enemy (medium-slow walk, but warps forward periodically — annoying to track)
+Config.TELEPORTER_SPEED      = 10    -- slower than troll on foot, but warps make up for it
+Config.TELEPORTER_HEALTH     = 25
+Config.TELEPORTER_INTERVAL   = 2.0   -- seconds between warps (more frequent — players need to react fast)
+Config.TELEPORTER_DISTANCE   = 22    -- studs jumped per warp; big enough to feel like teleport, not a hop
+Config.TELEPORTER_SOUND_ID       = "rbxassetid://133226202202712"
+Config.TELEPORTER_SOUND_VOLUME   = 0.7
+
 -- Spawning
 Config.SPAWN_INTERVAL        = 2.5   -- seconds between each spawn within a wave
 
@@ -54,11 +62,13 @@ Config.WAVE_ENEMY_SCALE      = 3     -- additional enemies added each wave
 Config.WAVE_SPEED_SCALE      = 1.15  -- multiply enemy speed each wave (compounding)
 Config.WAVE_BREAK_DURATION   = 8     -- seconds of break between waves
 Config.SPAMMER_CHANCE        = 0.3   -- probability (0–1) an enemy is a Spammer (wave 2+)
+Config.TELEPORTER_CHANCE     = 0.2   -- probability (0–1) an enemy is a Teleporter (wave 3+)
 Config.WAVES_TO_WIN          = 5     -- survive this many waves and the game declares victory
 
 -- Currency (awarded on ban)
 Config.COIN_TROLL            = 10
 Config.COIN_SPAMMER          = 20
+Config.COIN_TELEPORTER       = 25   -- harder to catch — pays a bit more than spammer
 
 -- Upgrades
 Config.UPGRADE_COOLDOWN_COST        = 50   -- base cost; scales linearly per level (lvl 1 = 50, lvl 2 = 100, lvl 3 = 150)

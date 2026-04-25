@@ -14,7 +14,16 @@ local kickEnemies  = remotes:WaitForChild("KickEnemies")
 
 local lastKickTime = {}  -- [player] = tick of last accepted kick
 
-kickEnemies.OnServerEvent:Connect(function(player)
+kickEnemies.OnServerEvent:Connect(function(player, lookDir)
+	-- Trust the client's camera-derived direction (server can't read camera state),
+	-- but sanity-check it: must be a Vector3 of roughly unit length and horizontal.
+	-- A malicious client could only spoof their kick angle, which is harmless in a
+	-- casual game with a 1s cooldown and no PvP.
+	if typeof(lookDir) ~= "Vector3" then return end
+	local mag = lookDir.Magnitude
+	if mag < 0.5 or mag > 1.5 then return end
+	if math.abs(lookDir.Y) > 0.5 then return end  -- must be roughly horizontal
+
 	local character = player.Character
 	if not character then return end
 	local root = character:FindFirstChild("HumanoidRootPart")
@@ -26,7 +35,7 @@ kickEnemies.OnServerEvent:Connect(function(player)
 	lastKickTime[player] = now
 
 	local origin      = root.Position
-	local forward     = root.CFrame.LookVector
+	local forward     = Vector3.new(lookDir.X, 0, lookDir.Z).Unit
 	local coneDot     = math.cos(math.rad(Config.KICK_CONE_ANGLE * 0.5))
 	local expiresAt   = now + Config.KICK_DURATION
 	local hitCount    = 0

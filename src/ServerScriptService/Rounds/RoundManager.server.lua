@@ -18,6 +18,9 @@ local spawnFunc     = spawnerScript:WaitForChild("Spawn")
 local countFunc     = spawnerScript:WaitForChild("GetActiveCount")
 
 local function pickEnemyType(wave)
+	if wave >= 3 and math.random() < Config.TELEPORTER_CHANCE then
+		return "Teleporter"
+	end
 	if wave >= 2 and math.random() < Config.SPAMMER_CHANCE then
 		return "Spammer"
 	end

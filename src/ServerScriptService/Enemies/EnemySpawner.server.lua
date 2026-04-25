@@ -41,6 +41,13 @@ local ENEMY_TYPES = {
 		size   = Vector3.new(2, 3, 2),
 		reward = Config.COIN_SPAMMER,
 	},
+	Teleporter = {
+		speed  = Config.TELEPORTER_SPEED,
+		health = Config.TELEPORTER_HEALTH,
+		color  = BrickColor.new("Bright violet"),
+		size   = Vector3.new(2.5, 3.5, 2.5),
+		reward = Config.COIN_TELEPORTER,
+	},
 }
 
 local function spawnEnemy(typeName, speedMultiplier)
@@ -69,11 +76,17 @@ local function spawnEnemy(typeName, speedMultiplier)
 	enemy.Parent = workspace
 
 	local speed = def.speed * (speedMultiplier or 1)
+	local nextTeleport = nil
+	if typeName == "Teleporter" then
+		nextTeleport = tick() + Config.TELEPORTER_INTERVAL
+	end
 	table.insert(activeEnemies, {
 		part           = enemy,
 		velocity       = velocity,
 		speed          = speed,
 		damageCooldown = 0,
+		typeName       = typeName,
+		nextTeleport   = nextTeleport,
 	})
 
 	print("[EnemySpawner] Spawned", typeName, "| speed:", speed, "| active:", #activeEnemies)
@@ -162,6 +175,25 @@ RunService.Heartbeat:Connect(function(dt)
 			effectiveSpeed = 0
 		elseif mutedUntil then
 			effectiveSpeed = data.speed * Config.MUTE_SLOW_FACTOR
+		end
+
+		-- Teleporters warp toward the zone every TELEPORTER_INTERVAL. Frozen blocks
+		-- the warp (Timeout fully pauses the enemy); Mute does NOT — a muted user can
+		-- still ghost-ping. So Mute is intentionally weaker against this enemy type.
+		if data.typeName == "Teleporter" and data.nextTeleport and now >= data.nextTeleport then
+			if not frozenUntil then
+				local toZone = zonePos - enemy.Position
+				if toZone.Magnitude > 0 then
+					local jump   = toZone.Unit * Config.TELEPORTER_DISTANCE
+					local oldPos = enemy.Position
+					local newPos = oldPos + Vector3.new(jump.X, 0, jump.Z)
+					enemy.Position = newPos
+					Effects.TeleportEffect(oldPos, newPos)
+				end
+				data.nextTeleport = now + Config.TELEPORTER_INTERVAL
+			else
+				data.nextTeleport = now + 0.5  -- check again shortly after freeze ends
+			end
 		end
 
 		local diff     = zonePos - enemy.Position

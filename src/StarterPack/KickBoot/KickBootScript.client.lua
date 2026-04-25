@@ -1,10 +1,12 @@
 -- StarterPack/KickBoot/KickBootScript (LocalScript)
--- On activate: fire KickEnemies with no payload — server re-derives the cone from
--- the player's HumanoidRootPart.CFrame.LookVector and hits everything inside it.
+-- On activate: send the camera's flattened forward vector so the kick cone aims
+-- where the *camera* is looking, not the character body (which only rotates when
+-- the player is moving — standing still + turning camera = body faces stale direction).
 -- Local cooldown mirrors the server cooldown to avoid wasted remote traffic.
 
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players           = game:GetService("Players")
+local Workspace         = game:GetService("Workspace")
 
 local Shared       = ReplicatedStorage:WaitForChild("Shared")
 local Config       = require(Shared:WaitForChild("Config"))
@@ -24,6 +26,12 @@ tool.Activated:Connect(function()
 	if not character then return end
 	if not character:FindFirstChild("HumanoidRootPart") then return end
 
+	local camera   = Workspace.CurrentCamera
+	local lookVec  = camera.CFrame.LookVector
+	local flat     = Vector3.new(lookVec.X, 0, lookVec.Z)
+	if flat.Magnitude < 0.01 then return end  -- looking straight up/down — no horizontal aim
+	local lookDir  = flat.Unit
+
 	print("[KickBoot] Kicking!")
-	kickEnemies:FireServer()
+	kickEnemies:FireServer(lookDir)
 end)

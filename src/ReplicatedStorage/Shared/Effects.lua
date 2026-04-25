@@ -175,6 +175,52 @@ function Effects.TimeoutEffect(position)
 	Debris:AddItem(anchor, EFFECT_LIFETIME)
 end
 
+-- Two-anchor purple burst: a fade-out at the departure spot and a fade-in at arrival.
+-- Sells the warp visually so players see what just happened instead of a silent jump.
+-- Also drops a short-lived purple PointLight at each end so the warp briefly glows.
+function Effects.TeleportEffect(startPos, endPos)
+	local function burst(pos, withSound)
+		local anchor  = createAnchor(pos)
+
+		local emitter = Instance.new("ParticleEmitter")
+		emitter.Texture       = "rbxasset://textures/particles/sparkles_main.dds"
+		emitter.Color         = ColorSequence.new(Color3.fromRGB(200, 80, 255))
+		emitter.Size          = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 2.6),
+			NumberSequenceKeypoint.new(1, 0),
+		})
+		emitter.Transparency  = NumberSequence.new({
+			NumberSequenceKeypoint.new(0, 0),
+			NumberSequenceKeypoint.new(1, 1),
+		})
+		emitter.Lifetime      = NumberRange.new(0.4, 0.8)
+		emitter.Speed         = NumberRange.new(20, 32)
+		emitter.SpreadAngle   = Vector2.new(180, 180)
+		emitter.Rate          = 0
+		emitter.LightEmission = 0.8
+		emitter.Parent        = anchor
+		emitter:Emit(45)
+
+		local light = Instance.new("PointLight")
+		light.Color      = Color3.fromRGB(200, 80, 255)
+		light.Brightness = 4
+		light.Range      = 10
+		light.Parent     = anchor
+
+		if withSound and Config.TELEPORTER_SOUND_ID ~= "" then
+			local sound   = Instance.new("Sound")
+			sound.SoundId = Config.TELEPORTER_SOUND_ID
+			sound.Volume  = Config.TELEPORTER_SOUND_VOLUME
+			sound.Parent  = anchor
+			sound:Play()
+		end
+
+		Debris:AddItem(anchor, EFFECT_LIFETIME)
+	end
+	burst(startPos, false)
+	burst(endPos, true)
+end
+
 -- White/green shockwave at the player's feet when a Kick fires.
 -- Visualizes the AOE — fires once per cast regardless of how many enemies got hit.
 function Effects.KickEffect(position)
