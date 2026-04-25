@@ -28,6 +28,7 @@ local currencyLabel = mainUI:WaitForChild("CurrencyLabel")
 local waveLabel     = mainUI:WaitForChild("WaveLabel")
 local upgradeButton = mainUI:WaitForChild("UpgradeButton")
 local cooldownPanel = mainUI:WaitForChild("CooldownPanel")
+local flashOverlay  = mainUI:WaitForChild("FlashOverlay")
 
 local runEnded = false  -- set true once either GameOver or GameWon fires
 
@@ -46,6 +47,24 @@ local function healthColor(pct)
 	else
 		return HEALTH_RED
 	end
+end
+
+-- Full-screen flash on run end. Shape: fade to half-opacity, hold, fade out.
+-- Frame is Active=false + ZIndex=100 in model.json so the overlay sits above
+-- other MainUI elements without sinking input clicks.
+local FLASH_FADE_IN  = TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+local FLASH_FADE_OUT = TweenInfo.new(0.40, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+local FLASH_HOLD     = 0.30
+local FLASH_RED      = Color3.fromRGB(255, 70, 70)
+local FLASH_GREEN    = Color3.fromRGB(80, 255, 140)
+
+local function playFlash(color)
+	flashOverlay.BackgroundColor3       = color
+	flashOverlay.BackgroundTransparency = 1
+	TweenService:Create(flashOverlay, FLASH_FADE_IN, {BackgroundTransparency = 0.5}):Play()
+	task.delay(FLASH_FADE_IN.Time + FLASH_HOLD, function()
+		TweenService:Create(flashOverlay, FLASH_FADE_OUT, {BackgroundTransparency = 1}):Play()
+	end)
 end
 
 healthChanged.OnClientEvent:Connect(function(current, max)
@@ -68,6 +87,7 @@ gameOver.OnClientEvent:Connect(function()
 	}):Play()
 	waveLabel.Text = "Run ended"
 	waveLabel.TextColor3 = Color3.fromRGB(255, 120, 120)
+	playFlash(FLASH_RED)
 	print("[ClientMain] Game over received")
 end)
 
@@ -76,6 +96,7 @@ gameWon.OnClientEvent:Connect(function()
 	waveLabel.Text       = "VICTORY"
 	waveLabel.TextColor3 = Color3.fromRGB(80, 255, 140)
 	healthText.TextColor3 = Color3.fromRGB(80, 255, 140)
+	playFlash(FLASH_GREEN)
 	print("[ClientMain] Victory received")
 end)
 
