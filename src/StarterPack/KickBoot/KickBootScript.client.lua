@@ -21,6 +21,7 @@ tool.Activated:Connect(function()
 	local now = tick()
 	if now - lastKick < Config.KICK_COOLDOWN then return end
 	lastKick = now
+	player:SetAttribute("KickReadyAt", now + Config.KICK_COOLDOWN)
 
 	local character = player.Character
 	if not character then return end

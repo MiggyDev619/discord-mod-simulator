@@ -40,6 +40,10 @@
     {
       "name": "GameWon",
       "className": "RemoteEvent"
+    },
+    {
+      "name": "EnemyCountChanged",
+      "className": "RemoteEvent"
     }
   ]
 }

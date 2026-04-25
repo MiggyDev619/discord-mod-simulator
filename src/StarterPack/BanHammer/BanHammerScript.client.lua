@@ -87,6 +87,7 @@ tool.Activated:Connect(function()
 	local cooldown = player:GetAttribute("BanCooldown") or Config.BAN_COOLDOWN
 	if now - lastSwing < cooldown then return end
 	lastSwing = now
+	player:SetAttribute("BanReadyAt", now + cooldown)
 
 	local character = player.Character
 	if not character then return end

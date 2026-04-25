@@ -1,0 +1,290 @@
+{
+  "className": "Frame",
+  "properties": {
+    "Size": {"UDim2": [[0, 248], [0, 56]]},
+    "Position": {"UDim2": [[0.5, 0], [1, -88]]},
+    "AnchorPoint": {"Vector2": [0.5, 1]},
+    "BackgroundTransparency": 1,
+    "BorderSizePixel": 0
+  },
+  "children": [
+    {
+      "className": "UIListLayout",
+      "properties": {
+        "FillDirection": "Horizontal",
+        "Padding": {"UDim": [0, 8]},
+        "HorizontalAlignment": "Center",
+        "VerticalAlignment": "Center",
+        "SortOrder": "LayoutOrder"
+      }
+    },
+    {
+      "name": "Ban",
+      "className": "Frame",
+      "properties": {
+        "Size": {"UDim2": [[0, 56], [0, 56]]},
+        "BackgroundColor3": [0.86, 0.24, 0.24],
+        "BackgroundTransparency": 0,
+        "BorderSizePixel": 0,
+        "LayoutOrder": 1
+      },
+      "children": [
+        {
+          "className": "UICorner",
+          "properties": {"CornerRadius": {"UDim": [0, 8]}}
+        },
+        {
+          "name": "Letter",
+          "className": "TextLabel",
+          "properties": {
+            "Text": "B",
+            "Size": {"UDim2": [[1, 0], [1, 0]]},
+            "BackgroundTransparency": 1,
+            "TextColor3": [1, 1, 1],
+            "Font": "GothamBold",
+            "TextScaled": true,
+            "TextStrokeTransparency": 0.5
+          },
+          "children": [
+            {
+              "className": "UIPadding",
+              "properties": {
+                "PaddingTop": {"UDim": [0, 6]},
+                "PaddingBottom": {"UDim": [0, 6]},
+                "PaddingLeft": {"UDim": [0, 6]},
+                "PaddingRight": {"UDim": [0, 6]}
+              }
+            },
+            {
+              "className": "UITextSizeConstraint",
+              "properties": {"MaxTextSize": 28}
+            }
+          ]
+        },
+        {
+          "name": "Timer",
+          "className": "TextLabel",
+          "properties": {
+            "Text": "",
+            "Size": {"UDim2": [[1, 0], [0, 16]]},
+            "Position": {"UDim2": [[0, 0], [1, -2]]},
+            "AnchorPoint": {"Vector2": [0, 1]},
+            "BackgroundTransparency": 1,
+            "TextColor3": [1, 1, 1],
+            "Font": "GothamBold",
+            "TextScaled": true,
+            "TextStrokeTransparency": 0.3,
+            "Visible": false
+          },
+          "children": [
+            {
+              "className": "UITextSizeConstraint",
+              "properties": {"MaxTextSize": 14}
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Mute",
+      "className": "Frame",
+      "properties": {
+        "Size": {"UDim2": [[0, 56], [0, 56]]},
+        "BackgroundColor3": [0.27, 0.59, 1],
+        "BackgroundTransparency": 0,
+        "BorderSizePixel": 0,
+        "LayoutOrder": 2
+      },
+      "children": [
+        {
+          "className": "UICorner",
+          "properties": {"CornerRadius": {"UDim": [0, 8]}}
+        },
+        {
+          "name": "Letter",
+          "className": "TextLabel",
+          "properties": {
+            "Text": "M",
+            "Size": {"UDim2": [[1, 0], [1, 0]]},
+            "BackgroundTransparency": 1,
+            "TextColor3": [1, 1, 1],
+            "Font": "GothamBold",
+            "TextScaled": true,
+            "TextStrokeTransparency": 0.5
+          },
+          "children": [
+            {
+              "className": "UIPadding",
+              "properties": {
+                "PaddingTop": {"UDim": [0, 6]},
+                "PaddingBottom": {"UDim": [0, 6]},
+                "PaddingLeft": {"UDim": [0, 6]},
+                "PaddingRight": {"UDim": [0, 6]}
+              }
+            },
+            {
+              "className": "UITextSizeConstraint",
+              "properties": {"MaxTextSize": 28}
+            }
+          ]
+        },
+        {
+          "name": "Timer",
+          "className": "TextLabel",
+          "properties": {
+            "Text": "",
+            "Size": {"UDim2": [[1, 0], [0, 16]]},
+            "Position": {"UDim2": [[0, 0], [1, -2]]},
+            "AnchorPoint": {"Vector2": [0, 1]},
+            "BackgroundTransparency": 1,
+            "TextColor3": [1, 1, 1],
+            "Font": "GothamBold",
+            "TextScaled": true,
+            "TextStrokeTransparency": 0.3,
+            "Visible": false
+          },
+          "children": [
+            {
+              "className": "UITextSizeConstraint",
+              "properties": {"MaxTextSize": 14}
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Timeout",
+      "className": "Frame",
+      "properties": {
+        "Size": {"UDim2": [[0, 56], [0, 56]]},
+        "BackgroundColor3": [1, 0.78, 0.2],
+        "BackgroundTransparency": 0,
+        "BorderSizePixel": 0,
+        "LayoutOrder": 4
+      },
+      "children": [
+        {
+          "className": "UICorner",
+          "properties": {"CornerRadius": {"UDim": [0, 8]}}
+        },
+        {
+          "name": "Letter",
+          "className": "TextLabel",
+          "properties": {
+            "Text": "T",
+            "Size": {"UDim2": [[1, 0], [1, 0]]},
+            "BackgroundTransparency": 1,
+            "TextColor3": [0.15, 0.1, 0],
+            "Font": "GothamBold",
+            "TextScaled": true,
+            "TextStrokeTransparency": 0.5
+          },
+          "children": [
+            {
+              "className": "UIPadding",
+              "properties": {
+                "PaddingTop": {"UDim": [0, 6]},
+                "PaddingBottom": {"UDim": [0, 6]},
+                "PaddingLeft": {"UDim": [0, 6]},
+                "PaddingRight": {"UDim": [0, 6]}
+              }
+            },
+            {
+              "className": "UITextSizeConstraint",
+              "properties": {"MaxTextSize": 28}
+            }
+          ]
+        },
+        {
+          "name": "Timer",
+          "className": "TextLabel",
+          "properties": {
+            "Text": "",
+            "Size": {"UDim2": [[1, 0], [0, 16]]},
+            "Position": {"UDim2": [[0, 0], [1, -2]]},
+            "AnchorPoint": {"Vector2": [0, 1]},
+            "BackgroundTransparency": 1,
+            "TextColor3": [0.1, 0.05, 0],
+            "Font": "GothamBold",
+            "TextScaled": true,
+            "TextStrokeTransparency": 0.3,
+            "Visible": false
+          },
+          "children": [
+            {
+              "className": "UITextSizeConstraint",
+              "properties": {"MaxTextSize": 14}
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Kick",
+      "className": "Frame",
+      "properties": {
+        "Size": {"UDim2": [[0, 56], [0, 56]]},
+        "BackgroundColor3": [0.42, 0.85, 0.5],
+        "BackgroundTransparency": 0,
+        "BorderSizePixel": 0,
+        "LayoutOrder": 3
+      },
+      "children": [
+        {
+          "className": "UICorner",
+          "properties": {"CornerRadius": {"UDim": [0, 8]}}
+        },
+        {
+          "name": "Letter",
+          "className": "TextLabel",
+          "properties": {
+            "Text": "K",
+            "Size": {"UDim2": [[1, 0], [1, 0]]},
+            "BackgroundTransparency": 1,
+            "TextColor3": [0.05, 0.15, 0.05],
+            "Font": "GothamBold",
+            "TextScaled": true,
+            "TextStrokeTransparency": 0.5
+          },
+          "children": [
+            {
+              "className": "UIPadding",
+              "properties": {
+                "PaddingTop": {"UDim": [0, 6]},
+                "PaddingBottom": {"UDim": [0, 6]},
+                "PaddingLeft": {"UDim": [0, 6]},
+                "PaddingRight": {"UDim": [0, 6]}
+              }
+            },
+            {
+              "className": "UITextSizeConstraint",
+              "properties": {"MaxTextSize": 28}
+            }
+          ]
+        },
+        {
+          "name": "Timer",
+          "className": "TextLabel",
+          "properties": {
+            "Text": "",
+            "Size": {"UDim2": [[1, 0], [0, 16]]},
+            "Position": {"UDim2": [[0, 0], [1, -2]]},
+            "AnchorPoint": {"Vector2": [0, 1]},
+            "BackgroundTransparency": 1,
+            "TextColor3": [0.05, 0.15, 0.05],
+            "Font": "GothamBold",
+            "TextScaled": true,
+            "TextStrokeTransparency": 0.3,
+            "Visible": false
+          },
+          "children": [
+            {
+              "className": "UITextSizeConstraint",
+              "properties": {"MaxTextSize": 14}
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

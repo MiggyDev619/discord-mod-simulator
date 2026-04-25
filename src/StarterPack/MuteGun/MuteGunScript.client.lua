@@ -18,6 +18,7 @@ tool.Activated:Connect(function()
 	local now = tick()
 	if now - lastShot < Config.MUTE_COOLDOWN then return end
 	lastShot = now
+	player:SetAttribute("MuteReadyAt", now + Config.MUTE_COOLDOWN)
 
 	local character = player.Character
 	if not character then return end

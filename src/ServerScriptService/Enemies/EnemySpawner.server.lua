@@ -14,8 +14,9 @@ local Systems         = ServerScriptService:WaitForChild("Systems")
 local GameManager     = require(Systems:WaitForChild("GameManager"))
 local CurrencyManager = require(Systems:WaitForChild("CurrencyManager"))
 
-local remotes  = Shared:WaitForChild("Remotes")
-local banEnemy = remotes:WaitForChild("BanEnemy")
+local remotes            = Shared:WaitForChild("Remotes")
+local banEnemy           = remotes:WaitForChild("BanEnemy")
+local enemyCountChanged  = remotes:WaitForChild("EnemyCountChanged")
 
 local map        = workspace:WaitForChild("Map")
 local enemyStart = map:WaitForChild("EnemyStart")
@@ -23,8 +24,9 @@ local serverZone = map:WaitForChild("ServerZone")
 
 local MUTE_COLOR = Color3.fromRGB(70, 150, 255)
 
-local activeEnemies = {}
-local lastBanTime   = {}  -- [player] = tick of last accepted ban
+local activeEnemies     = {}
+local lastBroadcastCount = -1
+local lastBanTime       = {}  -- [player] = tick of last accepted ban
 
 local ENEMY_TYPES = {
 	Troll = {
@@ -239,6 +241,13 @@ RunService.Heartbeat:Connect(function(dt)
 		else
 			data.velocity.Velocity = diff.Unit * effectiveSpeed
 		end
+	end
+
+	-- Broadcast enemy count once per frame when it changes. Cheaper than firing
+	-- on every spawn/destroy, and clients only care about the latest value.
+	if #activeEnemies ~= lastBroadcastCount then
+		lastBroadcastCount = #activeEnemies
+		enemyCountChanged:FireAllClients(lastBroadcastCount)
 	end
 end)
 
