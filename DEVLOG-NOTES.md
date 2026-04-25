@@ -11,6 +11,186 @@ Raw build notes for the Discord Mod Simulator Roblox project, structured for a d
 
 ---
 
+## 2026-04-25 — Content planning sprint: 10 clips for week-one
+
+> Non-code session today. **Important context gap**: git history shows three dev-day commits without DEVLOG entries — `a419aca` Day 9 (Teleporter enemy + Kick aim fix), `a6c3229` Day 10 (Splitter enemy), `6e50c6c` Day 11 (UI polish v1). The previous entry (Day 8+9, dated 2026-04-24) only covered the toolkit/icons portion of Day 9. Those three days need DEVLOG entries backfilled from commit diffs — flagged in "Blockers for next session" below.
+
+### What got built
+
+- **`docs/clips.md`** — working planning document for the first 10 short-form video clips under the MiggyDev faceless gamedev brand. Per-clip specs (audience, hook copy, body, caption shape, why-it-works, recording requirements), the full posting schedule (Mon/Wed/Fri × ~3.3 weeks), the Sunday batch capture session plan, and a cut-to-6 list for if reality eats four slots.
+- **Audience split**: 5 player-facing / 5 dev-facing. Ordered by hook strength (loadout reveal lands first; Phase 1 recap lands tenth) — strongest scroll-stopper at the top because "more from this account" surfaces clip 01 to anyone who finds 02–10 first.
+- **Mix targets met**: three broken-or-fixed framings (camera shake, whiff bug, icon iteration), one honestly-imperfect anchor (the still-open whiff question, slot 5), one Phase 1 recap (slot 10), two code-on-screen-as-primary slots (camera shake, empty packet) — at the cap, not over it.
+- **Source material mined from this DEVLOG**: the existing per-entry "Hooks for the post" lists were already half-content. Day 7 (camera shake), Day 8+9 (status priority + whiff bug + icon iteration + empty-payload kick), Day 5 (IsGameOver / Phase 1 close), Day 4 (currency/attributes), Day 2 (server health / SERVER DEAD), Day 3 (Spammer wave 3 sweat). Most lifted cleanly with a player-audience reframe.
+
+### Decisions made (and why)
+
+- **Content planning gets a non-numbered DEVLOG entry, not "Day 10".** The 30-day roadmap in `docs/plan.md` reserves day numbers for shipped code so progress stays comparable. Calling content-strategy work "Day 10" would mislabel the dev count and push the actual Day 10 (enemy variety) into Day 11. Honest framing > clean sequence.
+
+- **`docs/clips.md`, not `CLIPS.md` at the repo root.** Same logic as `docs/plan.md` vs `CLAUDE.md`. Working planning documents that evolve weekly belong under `docs/`; project-meta files (README, CLAUDE.md, DEVLOG-NOTES) live at root and change rarely. Clips will be edited every Sunday for the next month.
+
+- **5 player / 5 dev split, not weighted toward dev.** Dev material is stronger right now — concrete bugs, decisions, code. Player material is weaker but matters more long-term. Forcing equal coverage prevents the trap of only making clips about what's already easy to capture, which would lock the brand into "tutorials for other devs" with no path to actual players.
+
+- **Loadout reveal is slot 01, not the Phase 1 recap.** A week-one account has no audience for a recap to compress. The strongest scroll-stopper has to land first because algorithmic surfacing favors recent uploads, and "more from this account" pulls clip 01 forward when a stranger discovers any other clip in the rotation.
+
+- **The whiff bug clip is non-negotiable, mid-rotation (slot 5).** Faceless dev accounts that show only polished wins lose trust within the first ten clips. One "here's what's still broken" slot — not at the start (sets the wrong tone) and not at the end (looks like an apology) — buys credibility for everything that surrounds it. Existing open question (visual-without-audio on whiff?) is real and ships honestly.
+
+- **Captions stay platform-agnostic in `clips.md`.** The per-platform rewrite (TikTok hashtag count vs IG vs X length limits vs Shorts pinned-comment style) is the `content-engine` `caption draft` command's job — currently a stub but the next vertical slice. Drafting platform-specific captions here would force a rewrite when that command lands.
+
+### What's intentionally not built yet
+
+- **The recording session itself.** Planned for Sunday, ~2 hours, all 10 clips' raw material captured in one batch. Detailed plan is in `docs/clips.md`. Two clips need temporarily-reverted code (camera-shake bad version, kick whiff with sound); budget ~10 min round-trip overhead.
+- **Editing pipeline.** Each clip needs an edit pass after capture — cyan/violet overlay text, MiggyDev corner mark, voiceover layered where applicable. Should happen on a separate day from recording; mode-switching mid-session degrades both.
+- **Per-platform caption variants.** Defer until `content-engine` `caption draft` lands.
+
+### Blockers for next session
+
+- **Re-evaluate `docs/clips.md` next session** now that Day 9–11 entries are backfilled (below). Teleporter, Splitter, and UI polish v1 are clip material — Splitter ban-spawning children is especially visual and stronger than at least one of the current 10 (likely clip 09, "Wave 3 sweat," which overlaps clip 04's coverage). Defer the clip-list revision to a focused turn rather than thrashing the plan now.
+- Sunday recording session needs ~2 uninterrupted hours and a quiet room for the three voiceover passes (whiff bug, victory, empty packet — ~30s combined audio).
+- Two captures require restoring removed code temporarily (camera-shake CFrame tween from Day 7 pre-fix; unconditional `Effects.KickEffect` from Day 9 pre-half-fix). Plan: `git stash` after capture, restore working tree before next dev day.
+
+### Hooks for the post (about the planning itself, separate from the clips' own hooks)
+
+Pick one. Not all.
+
+- **"Planning content for a faceless brand with zero audience"** — the constraints (faceless, low-key from the employer, 15–30s clips), the hard problem (week-one means strangers not followers), and the framework (player/dev split, hook-strength as ordering criterion). The strongest meta hook on this list.
+- **"DEVLOG hooks are clip seeds"** — the workflow itself. The "Hooks for the post" section that the user's template forces at the bottom of every DEVLOG entry was already half-content; clipping it for video is one more transformation, and DEVLOG entries are the cheapest content-planning tool I have.
+- **"Why the whiff bug clip is non-negotiable"** — authenticity math in a polish-heavy feed. The argument for one "here's what's broken" slot in every ten-clip rotation, and why slot 5 specifically.
+- **"Choosing the loadout reveal over the recap as clip 01"** — content-strategy as a real engineering decision. The trade-off: a recap pays off only if the audience exists; a loadout reveal works on a stranger.
+
+---
+
+## 2026-04-25 — Day 11: UI polish v1 (health bar, live wave count, cooldown panel)
+
+> Backfilled from commit `6e50c6c` after the Day 9–11 gap was caught during the 2026-04-25 content-planning sprint.
+
+### What got built
+
+- **`HealthLabel` rebuilt as a Frame**, not a TextLabel — has named `Fill` and `Label` children. Fill width tweens with health %, color crosses green / yellow / red at 60% / 30% thresholds. ClientMain drives the tween from `HealthChanged` events.
+- **Wave label combines `WaveStarted` + `EnemyCountChanged`** into "Wave X / Y — N left", driven by a small ClientMain state machine. EnemySpawner broadcasts active count once per heartbeat tick when it changes, so spawn / destroy / zone-damage all surface live without per-event remote traffic.
+- **`EnemyCountChanged` RemoteEvent** — new, single-value payload (the new count). Replaces what would have been three separate events (spawned / destroyed / damaged-out).
+- **Cooldown panel (`MainUI/CooldownPanel`)** — new `Frame` with 4 slots (Ban / Mute / Kick / Timeout, in hotbar order) at bottom-center. Each slot has named `Letter` and `Timer` TextLabel children. ClientMain reads `<Tool>ReadyAt` attributes off `LocalPlayer` per-frame to dim slots on cooldown and surface decimal seconds remaining.
+- **Tool client scripts standardized on `<Tool>ReadyAt`** — `BanHammerScript`, `MuteGunScript`, `KickBootScript`, `TimeoutCardScript` each set `Players.LocalPlayer:SetAttribute("<Tool>ReadyAt", tick() + cooldown)` immediately after a successful activation. Client-only attributes — don't replicate to server, which has its own cooldown gating where needed.
+- **`ClientMain.client.lua` major refactor** (~140 lines added/changed) — consumes `WaveStarted`, `EnemyCountChanged`, `WaveBreak`, `HealthChanged`, `GameOver`, `GameWon`. Per-frame loop reads `<Tool>ReadyAt` attributes to update the cooldown panel.
+
+### Decisions made (and why)
+
+- **One `EnemyCountChanged` event with the count, not three events for spawn / destroy / damaged-out.** All three sites need the same downstream UI update ("N left" text). Funneling through one event with the new count keeps ClientMain's handler shape uniform — no event-type branching for UX that doesn't differentiate. Server fires once per heartbeat tick (debounced), not once per delta.
+
+- **Cooldown state via client-set Player attributes, not RemoteEvents.** Each tool's LocalScript writes `<Tool>ReadyAt = tick() + cooldown` on the LocalPlayer. ClientMain reads per-frame. No replication, no server traffic — server already enforces its own cooldown gate. Same shape as Day 4's "Player attributes replace RemoteEvents for client-rendered state" decision, applied to a new domain.
+
+- **Cooldown panel is a Frame with named slot children, not 4 ImageLabels.** Each slot is `Letter` + `Timer` TextLabels under a slot Frame, fully Rojo-owned. Future work (icons, sweep animation, custom hotbar replacement) layers on top without rewriting the structure. Pick one structure now → next iteration is additive, not a rewrite.
+
+- **HealthLabel rebuilt in place, not as a parallel HealthBar element.** The old HealthLabel was already at top-center with the right anchor — replacing its content (text → frame with Fill/Label children) preserved the layout and the `HealthChanged` wiring. Z-order, anchoring, and naming all stayed put.
+
+- **Health bar color thresholds at 60% / 30%, not 66% / 33%.** Most damage in DMS comes in late-wave bursts; 60% is "you're getting hit, pay attention," 30% is "panic." Even thirds put the panic line too late. Tuned by feel, not theory.
+
+### What's intentionally not built yet
+
+- **Cooldown slot icons.** Currently shows letters (`B / M / K / T`). The 1024×1024 PNGs from Day 8+9 belong here too — deferred to next UI session.
+- **Cooldown sweep animation.** Slots dim flat, no rotating sweep. Common in MOBA-style cooldown UIs. Two-line tween change once icons land.
+- **Custom hotbar replacement.** Default Roblox `CoreGui` backpack still owns the top hotbar. Disabling `Enum.CoreGuiType.Backpack` and rendering a custom one is Phase 5 (Days 23–24, "UI cleanup").
+
+### Blockers for next session
+
+- None. UI v1 is stable; cooldown panel works against all four tools; wave + health labels are live.
+
+### Hooks for the post
+
+Pick one. Not all.
+
+- **"`Player:SetAttribute` is the right way to wire a cooldown UI"** — client-only attributes for client-rendered state. Why a `<Tool>ReadyAt` attribute beats a `CooldownChanged` RemoteEvent. Same lesson as Day 4's currency wiring, applied to a new domain.
+- **"One enemy-count event with the count, not three events for spawn / destroy / damage"** — debounced single-event design. Uniform handler shape, cheap server, no event-type branching.
+- **"Health bar color thresholds at 60 and 30, not 66 and 33"** — feel-driven UX numbers. The argument for tuning thresholds against actual damage rhythm, not theoretical even thirds.
+- **"Frame with named children > TextLabel for any UI that might grow"** — the HealthLabel rebuild. Why a `Fill` + `Label` structure preserved every wire-up while making the bar extensible.
+
+---
+
+## 2026-04-25 — Day 10: Splitter enemy
+
+> Backfilled from commit `a6c3229` after the Day 9–11 gap was caught during the 2026-04-25 content-planning sprint.
+
+### What got built
+
+- **Splitter enemy** — new type, hot pink, wave 4+, 15% per-slot probability (`Config.SPLITTER_CHANCE = 0.15`). Speed between Troll and Spammer (14 studs/s), HP 20, slightly bigger than Troll (`Vector3.new(3.2, 4.2, 3.2)`) so it visually reads as "the parent." Reward: 30 coins (highest non-child).
+- **`SplitterChild` enemy** — distinct type spawned only by the Splitter ban hook. Carnation pink, smaller (size ratio 0.55), faster (speed ratio 1.35× the parent's *effective* speed, so wave multipliers carry through). RoundManager NEVER rolls SplitterChild → children can't recurse. Reward: 5 coins each (intentionally low — keeps Splitter from becoming a coin farm).
+- **`spawnEnemy` extended** with optional `spawnPos`, `sizeOverride`, `speedOverride` for derived spawns. RoundManager only ever calls with `(typeName, speedMultiplier)`; the Splitter ban hook is the only caller using the override args.
+- **Splitter ban hook** in `EnemySpawner.banEnemy.OnServerEvent` — runs BEFORE `Effects.HitFlash` and `Effects.BanEffect`, gated on `enemyPart.Name == "Splitter"`. Looks up the parent's data row to get `parentSpeed`, derives `childSpeed` and `childSize`, then spawns 2 children at angles `(0, π)` around the ban position (`SPLITTER_CHILD_OFFSET = 4` studs apart). `Effects.SplitEffect(banPos)` fires once per split, not per child.
+- **`Effects.SplitEffect`** — pink particle puff (30 sparks, 1.8 → 0 size) plus the split sound (`rbxassetid://127599335301017`).
+- **`CLAUDE.md` updated** to document the type-specific-ban-path-behavior pattern: keying off `enemyPart.Name`, override args for derived spawns, distinct child type that RoundManager never rolls.
+
+### Decisions made (and why)
+
+- **Children are a distinct type (`SplitterChild`), not "small Splitters."** RoundManager never picks SplitterChild from `pickEnemyType`. If children were Splitters, banning a child would spawn grandchildren — infinite recursion or a manual depth check. The type split makes recursion impossible by construction. Rejected: a `splitDepth` integer attribute on each enemy + a recursion limit — works but leaks the structural concern into runtime state.
+
+- **Override args at the end of `spawnEnemy(typeName, speedMultiplier, spawnPos, sizeOverride, speedOverride)`.** RoundManager and the ban hook both call into the same function. Positional optionals at the end keep the common call (`spawnEnemy("Troll", 1.5)`) clean and the override case explicit. Rejected: a separate `spawnEnemyAt` for derived spawns — duplicates setup code that needs to stay in lockstep.
+
+- **Child speed scales off `parentData.speed`, not `Config.SPLITTER_SPEED`.** When wave 6 hits and the parent is moving at `14 × 1.15^5 ≈ 28`, children should inherit that scaling. Reading the live data table preserves wave multipliers through the split. Hardcoding off Config would make late-wave splits feel weak.
+
+- **Coin economy: parent 30, child 5.** Splitter is dangerous if left alive — the high reward justifies the risk. Children are 5 coins each (10 total per split), less than just letting the parent pay out (30). This means you get *more* coins by NOT splitting it (e.g., Mute → Timeout → ban after position is controlled). Coin design as gameplay design.
+
+- **Hook fires before HitFlash / BanEffect, not after.** "One becomes many" reads cleanest when children appear in the same frame as the parent's flash. Fire-after would put a frame gap between disappearance and replacement; fire-before keeps the swap instant.
+
+- **`Effects.SplitEffect` once per split, not per child.** Sound spam is ugly. The split is one event with two outcomes; one effect call matches the perception.
+
+### What's intentionally not built yet
+
+- **Variable child count.** Always 2. Could become a Config knob for a Phase 5 "Spam Storm" wave modifier, but defaulting to 2 is the cleanest version.
+- **Inherited muted/frozen visuals on children.** A Splitter banned while Muted produces children whose speed already includes the slow (parent's effective speed × 1.35). The gameplay is correct; the children just don't *look* slowed. Cosmetic; deferred.
+
+### Hooks for the post
+
+Pick one. Not all.
+
+- **"How to spawn enemies that can't recurse"** — distinct child type, RoundManager never picks it, the type split as a structural prevention instead of a depth counter. One enemy, one design pattern, evergreen.
+- **"Inheriting speed across a split"** — children read speed from the parent's runtime `data.speed`, not from Config, so wave multipliers carry through. Five-line lesson on "use the live state, not the spec value."
+- **"30 coins for the parent, 5 each for the kids: economy as a pacing tool"** — the math behind making the Splitter pay more if you DON'T split it. Concrete, specific, gameplay-design-flavored.
+- **"One effect per event, not one per outcome"** — `SplitEffect` fires once per ban, not per child. The aesthetic argument for fewer-but-louder effect calls.
+
+---
+
+## 2026-04-25 — Day 9: Teleporter enemy + Kick aim fix
+
+> Backfilled from commit `a419aca` after the Day 9–11 gap was caught during the 2026-04-25 content-planning sprint. The Day 8+9 entry below covers the toolkit/icons portion of Day 9; this entry covers the Teleporter and Kick aim fix that landed in the same commit but never made the previous entry.
+
+### What got built
+
+- **Teleporter enemy** — new type, bright violet, wave 3+, 20% per-slot probability (`Config.TELEPORTER_CHANCE = 0.2`). Slow on foot (10 studs/s, slower than Troll) but warps `TELEPORTER_DISTANCE = 22` studs toward the zone every 2.0s. Slightly bigger footprint than Troll (`Vector3.new(2.5, 3.5, 2.5)`).
+- **`Effects.TeleportEffect(startPos, endPos)`** — two-anchor purple particle burst with a short PointLight glow at each end. Sound (`rbxassetid://133226202202712`) plays only at arrival; depart is silent. Sells the warp visually so players see what just happened instead of a silent jump.
+- **EnemySpawner heartbeat** — Teleporter warp logic added. Per-enemy state (`typeName`, `nextTeleport`) lives on the `activeEnemies` data table next to `damageCooldown`, NOT on Roblox attributes. Frozen blocks the warp; Mute does NOT. `Effects.TeleportEffect` fires on every successful warp.
+- **RoundManager `pickEnemyType`** — picks Teleporter first for wave ≥ 3 (20% roll), else Spammer (wave ≥ 2, 30%), else Troll. Order matters: highest-tier-eligible enemy gets first claim.
+- **Coin reward** — `COIN_TELEPORTER = 25`, between Spammer (20) and the future Splitter (30). Harder to catch, pays a bit more.
+- **Kick aim fix** — switched from server-side `HumanoidRootPart.CFrame.LookVector` to client-sent camera `LookVector`. Server now validates the received `Vector3` is roughly unit-length (`0.5 < magnitude < 1.5`) and horizontal (`abs(Y) < 0.5`); flattens it before using as the cone direction.
+- **`KickBootScript.client.lua`** — reads `Workspace.CurrentCamera.CFrame.LookVector`, flattens to horizontal, normalizes, sends as `kickEnemies:FireServer(lookDir)`. Bails early if magnitude < 0.01 (player looking straight up/down — no horizontal aim).
+- **`CLAUDE.md` updated** — documents the Kick aim exception to the server-authoritative rule, and the per-enemy-state-on-data-table-not-attributes pattern (Teleporter's `nextTeleport`).
+
+### Decisions made (and why)
+
+- **Per-enemy behavior state lives on the spawner's `activeEnemies` data table, not on attributes.** Attributes are reserved for status effects that need to be visible to handler scripts (Mute / Timeout / Kick). Teleporter's `nextTeleport` timer is a private spawner concern — exposing it as a Roblox attribute would invite handler scripts to read it, leak the implementation, and replicate to clients for no reason. Rule: attributes for cross-script-boundary state, data tables for private spawner state.
+
+- **Frozen blocks the warp; Mute doesn't.** Timeout fully pauses an enemy — including its warp tick. Mute slows movement, but a muted user can still ghost-ping, so a slowed Teleporter should still warp. This makes Timeout the right counter to Teleporter and Mute deliberately weaker against this enemy type — adding gameplay differentiation without inventing a new mechanic.
+
+- **Kick aim moves to a client-sent vector despite the server-authoritative rule.** Body rotation only updates when the player is moving — standing still + turning the camera leaves the body facing the previous direction. Cone aimed at stale facings; clicks did nothing; kick felt broken. The server can't read camera state, so the client has to send it. Server validates the vector is unit-length and horizontal; the kick is non-destructive (no damage, no rewards) so the worst-case spoof is "kicked enemies behind you" — a UX papercut, not an exploit. Documented the exception in `CLAUDE.md` so the rule's edges stay visible.
+
+- **Two-anchor teleport burst with silent depart, audible arrive.** A symmetric audible burst would feel like one event. Silent vanish + audible arrive splits the perception of "where did they go?" / "oh — there." Reads as menacing instead of busy.
+
+- **RoundManager picks Teleporter first, not last.** Picking from least-likely to most-likely (Teleporter 20% → Spammer 30% → Troll fallback) means the highest-tier-eligible enemy gets first claim. Order is the wave gating: that's what makes wave 3 feel different from wave 2.
+
+### What's intentionally not built yet
+
+- **Path variation.** Day 9–10's original scope mentioned path variation alongside enemy variety; Teleporter and Splitter shipped instead. Path variation deferred — possibly absorbed into the Phase 2 game-feel pass, or skipped if enemy variety alone is enough difference.
+- **Teleport telegraph.** The warp is instant visually. A 0.2s pre-burst at the destination would let attentive players Timeout mid-windup. Filed but not shipped.
+
+### Hooks for the post
+
+Pick one. Not all.
+
+- **"Why I broke the server-authoritative rule for one tool"** — the Kick aim fix story. Body-rotation aiming was UX-broken; client-camera vector with sanity validation is the working compromise. The threat model is the lesson: not every "send from client" is a vulnerability if the worst-case spoof is harmless.
+- **"Per-enemy behavior state: when to use attributes and when to use a data table"** — the `nextTeleport` decision. Attributes for cross-script-boundary state, data tables for private spawner state. Concrete rule, concrete example.
+- **"Timeout dominates, Mute slips through: differentiating counters via priority rules"** — Mute lets the warp fire, Timeout blocks it. One enemy type, two existing tools, a meaningful tactical difference. The status priority ladder rewarded the gameplay even though it was originally a refactor.
+- **"Two-anchor teleport burst: vanish silent, arrive loud"** — small visual-design lesson. Symmetric effects feel like one event; asymmetric effects narrate the action.
+
+---
+
 ## 2026-04-24 — Day 8 + 9: full moderation toolkit (Mute, Timeout, Kick) + hotbar icons
 
 ### What got built
