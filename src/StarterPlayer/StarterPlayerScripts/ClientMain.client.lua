@@ -9,6 +9,7 @@ local RunService        = game:GetService("RunService")
 
 local Shared             = ReplicatedStorage:WaitForChild("Shared")
 local Config             = require(Shared:WaitForChild("Config"))
+local Theme              = require(Shared:WaitForChild("Theme"))
 local remotes            = Shared:WaitForChild("Remotes")
 local healthChanged      = remotes:WaitForChild("HealthChanged")
 local gameOver           = remotes:WaitForChild("GameOver")
@@ -34,18 +35,15 @@ local runEnded = false  -- set true once either GameOver or GameWon fires
 
 -- Health bar: width tweens with health %, color crosses green→yellow→red.
 -- Tweening Size and BackgroundColor3 in one TweenService call keeps them in sync.
-local HEALTH_TWEEN  = TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-local HEALTH_GREEN  = Color3.fromRGB(60, 200, 80)
-local HEALTH_YELLOW = Color3.fromRGB(240, 210, 50)
-local HEALTH_RED    = Color3.fromRGB(220, 60, 60)
+local HEALTH_TWEEN = TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 
 local function healthColor(pct)
 	if pct > 0.6 then
-		return HEALTH_GREEN
+		return Theme.HealthGreen
 	elseif pct > 0.3 then
-		return HEALTH_YELLOW
+		return Theme.HealthYellow
 	else
-		return HEALTH_RED
+		return Theme.HealthRed
 	end
 end
 
@@ -55,8 +53,6 @@ end
 local FLASH_FADE_IN  = TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 local FLASH_FADE_OUT = TweenInfo.new(0.40, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
 local FLASH_HOLD     = 0.30
-local FLASH_RED      = Color3.fromRGB(255, 70, 70)
-local FLASH_GREEN    = Color3.fromRGB(80, 255, 140)
 
 local function playFlash(color)
 	flashOverlay.BackgroundColor3       = color
@@ -80,23 +76,23 @@ end)
 gameOver.OnClientEvent:Connect(function()
 	runEnded = true
 	healthText.Text       = "SERVER DEAD"
-	healthText.TextColor3 = Color3.fromRGB(255, 50, 50)
+	healthText.TextColor3 = Theme.RedWarn
 	TweenService:Create(healthFill, HEALTH_TWEEN, {
 		Size             = UDim2.new(0, 0, 1, 0),
-		BackgroundColor3 = HEALTH_RED,
+		BackgroundColor3 = Theme.HealthRed,
 	}):Play()
 	waveLabel.Text = "Run ended"
-	waveLabel.TextColor3 = Color3.fromRGB(255, 120, 120)
-	playFlash(FLASH_RED)
+	waveLabel.TextColor3 = Theme.RedWarn
+	playFlash(Theme.RedWarn)
 	print("[ClientMain] Game over received")
 end)
 
 gameWon.OnClientEvent:Connect(function()
 	runEnded = true
 	waveLabel.Text       = "VICTORY"
-	waveLabel.TextColor3 = Color3.fromRGB(80, 255, 140)
-	healthText.TextColor3 = Color3.fromRGB(80, 255, 140)
-	playFlash(FLASH_GREEN)
+	waveLabel.TextColor3 = Theme.GreenWin
+	healthText.TextColor3 = Theme.GreenWin
+	playFlash(Theme.GreenWin)
 	print("[ClientMain] Victory received")
 end)
 
@@ -116,11 +112,11 @@ local function renderWaveLabel()
 	if waveState.mode == "wave" then
 		waveLabel.Text = string.format("Wave %d / %d  —  %d left",
 			waveState.wave, waveState.total, waveState.enemyCount)
-		waveLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+		waveLabel.TextColor3 = Theme.Zinc50
 	elseif waveState.mode == "break" then
 		waveLabel.Text = string.format("Wave %d / %d in %ds",
 			waveState.wave, waveState.total, waveState.secondsLeft)
-		waveLabel.TextColor3 = Color3.fromRGB(255, 215, 0)
+		waveLabel.TextColor3 = Theme.Yellow400
 	end
 end
 
@@ -147,8 +143,6 @@ enemyCountChanged.OnClientEvent:Connect(function(count)
 end)
 
 -- Currency + upgrade button
-local CURRENCY_GOLD       = Color3.fromRGB(255, 215, 0)
-local CURRENCY_FLASH      = Color3.fromRGB(255, 255, 180)
 local CURRENCY_PULSE_INFO = TweenInfo.new(0.18, Enum.EasingStyle.Quad, Enum.EasingDirection.Out, 0, true)
 local FLOATER_INFO        = TweenInfo.new(0.7, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
 
@@ -164,7 +158,7 @@ local function spawnCoinFloater(delta)
 	floater.AnchorPoint            = Vector2.new(0, 0)
 	floater.BackgroundTransparency = 1
 	floater.Text                   = "+" .. delta
-	floater.TextColor3             = CURRENCY_GOLD
+	floater.TextColor3             = Theme.CurrencyGold
 	floater.TextStrokeColor3       = Color3.fromRGB(0, 0, 0)
 	floater.TextStrokeTransparency = 0.3
 	floater.Font                   = Enum.Font.GothamBold
@@ -190,7 +184,7 @@ local function updateCurrency()
 	if delta > 0 then
 		-- Brief color flash on the main label, plus a +N floater for the gain amount.
 		TweenService:Create(currencyLabel, CURRENCY_PULSE_INFO, {
-			TextColor3 = CURRENCY_FLASH,
+			TextColor3 = Theme.CurrencyFlash,
 		}):Play()
 		spawnCoinFloater(delta)
 	end

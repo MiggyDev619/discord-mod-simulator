@@ -6,7 +6,7 @@
     "TextTruncate": "AtEnd",
     "Position": {"UDim2": [[0.5, 0], [0, 58]]},
     "AnchorPoint": {"Vector2": [0.5, 0]},
-    "BackgroundColor3": [0.08, 0.08, 0.08],
+    "BackgroundColor3": [0.0353, 0.0353, 0.0431],
     "BackgroundTransparency": 0.4,
     "BorderSizePixel": 0,
     "TextColor3": [1, 1, 1],

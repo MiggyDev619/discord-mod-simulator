@@ -1,0 +1,14 @@
+{
+  "className": "ImageLabel",
+  "properties": {
+    "Size": {"UDim2": [[0, 80], [0, 80]]},
+    "Position": {"UDim2": [[1, -12], [1, -12]]},
+    "AnchorPoint": {"Vector2": [1, 1]},
+    "BackgroundTransparency": 1,
+    "BorderSizePixel": 0,
+    "Image": "rbxassetid://0",
+    "ImageTransparency": 0.7,
+    "ScaleType": "Fit",
+    "Description": "INSERT-LOGO-ASSET-ID-HERE — replace rbxassetid://0 with the uploaded miggydev-mark-200 ID"
+  }
+}
