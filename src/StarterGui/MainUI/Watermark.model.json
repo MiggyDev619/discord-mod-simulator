@@ -8,7 +8,6 @@
     "BorderSizePixel": 0,
     "Image": "rbxassetid://0",
     "ImageTransparency": 0.7,
-    "ScaleType": "Fit",
-    "Description": "INSERT-LOGO-ASSET-ID-HERE — replace rbxassetid://0 with the uploaded miggydev-mark-200 ID"
+    "ScaleType": "Fit"
   }
 }

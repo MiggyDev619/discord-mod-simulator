@@ -3,6 +3,12 @@
 -- should pull from here so a future rebrand is a single-file edit.
 -- Status-effect colors on enemy parts and particle bursts are intentionally NOT
 -- here — those live with their handlers because they're gameplay feedback, not brand.
+--
+-- INSERT-LOGO-ASSET-ID-HERE
+-- The brand watermark lives at StarterGui/MainUI/Watermark.model.json with
+-- Image = "rbxassetid://0" as a placeholder. After uploading
+-- E:\Content\DMS\Brand\miggydev-mark-200.png to Roblox, replace the 0 with
+-- the real asset id in that file.
 
 local Theme = {}
 
