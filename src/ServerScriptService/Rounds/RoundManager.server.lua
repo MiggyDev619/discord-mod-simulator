@@ -32,18 +32,46 @@ local function pickEnemyType(wave)
 	return "Troll"
 end
 
-local function runWave(wave)
-	local enemyCount = Config.WAVE_ENEMY_BASE + (wave - 1) * Config.WAVE_ENEMY_SCALE
-	local speedMult  = Config.WAVE_SPEED_SCALE ^ (wave - 1)
+-- Roll a modifier (or nil) for a wave. Modifiers are gated by their `minWave`;
+-- a wave can only get one modifier (chosen uniformly from those eligible).
+local function rollModifier(wave)
+	if math.random() >= Config.MODIFIER_CHANCE then return nil end
+	local eligible = {}
+	for _, m in ipairs(Config.WAVE_MODIFIERS) do
+		if wave >= m.minWave then
+			table.insert(eligible, m)
+		end
+	end
+	if #eligible == 0 then return nil end
+	return eligible[math.random(1, #eligible)]
+end
 
-	print(string.format("[RoundManager] Wave %d/%d | %d enemies | %.2fx speed",
-		wave, Config.WAVES_TO_WIN, enemyCount, speedMult))
+local function runWave(wave)
+	local modifier = rollModifier(wave)
+
+	local baseCount  = Config.WAVE_ENEMY_BASE + (wave - 1) * Config.WAVE_ENEMY_SCALE
+	local enemyCount = math.ceil(baseCount * (modifier and modifier.enemyCountMult or 1))
+	local speedMult  = (Config.WAVE_SPEED_SCALE ^ (wave - 1)) * (modifier and modifier.speedMult or 1)
+
+	-- forceType overrides the normal type picker for the whole wave.
+	local pickForThisWave = function() return pickEnemyType(wave) end
+	if modifier and modifier.forceType then
+		pickForThisWave = function() return modifier.forceType end
+	end
+
+	if modifier then
+		print(string.format("[RoundManager] Wave %d/%d | %d enemies | %.2fx speed | MODIFIER: %s",
+			wave, Config.WAVES_TO_WIN, enemyCount, speedMult, modifier.label))
+	else
+		print(string.format("[RoundManager] Wave %d/%d | %d enemies | %.2fx speed",
+			wave, Config.WAVES_TO_WIN, enemyCount, speedMult))
+	end
 	setWaveRemaining:Invoke(enemyCount)
-	waveStarted:FireAllClients(wave, Config.WAVES_TO_WIN)
+	waveStarted:FireAllClients(wave, Config.WAVES_TO_WIN, modifier and modifier.label or nil)
 
 	for i = 1, enemyCount do
 		if GameManager.IsGameOver() then return end
-		spawnFunc:Invoke(pickEnemyType(wave), speedMult)
+		spawnFunc:Invoke(pickForThisWave(), speedMult)
 		task.wait(Config.SPAWN_INTERVAL)
 	end
 

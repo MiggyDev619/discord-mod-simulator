@@ -79,6 +79,38 @@ Config.TELEPORTER_CHANCE     = 0.2   -- probability (0–1) an enemy is a Telepo
 Config.SPLITTER_CHANCE       = 0.15  -- probability (0–1) an enemy is a Splitter (wave 4+)
 Config.WAVES_TO_WIN          = 5     -- survive this many waves and the game declares victory
 
+-- Wave modifiers (chaos events). Rolled at wave start with MODIFIER_CHANCE
+-- probability for waves >= 3. forceType overrides RoundManager's normal type
+-- picker for the whole wave; enemyCountMult / speedMult stack onto the wave's
+-- normal scaling. label is shown in the wave UI.
+Config.MODIFIER_CHANCE = 0.30
+Config.WAVE_MODIFIERS = {
+	{
+		key            = "SpamStorm",
+		label          = "SPAM STORM",
+		minWave        = 3,
+		enemyCountMult = 1.5,   -- 50% more enemies
+		speedMult      = 1.0,
+		forceType      = "Spammer",
+	},
+	{
+		key            = "ToxicWave",
+		label          = "TOXIC WAVE",
+		minWave        = 3,
+		enemyCountMult = 1.0,
+		speedMult      = 1.3,   -- 30% faster on top of normal scaling
+		forceType      = nil,   -- normal type mix
+	},
+	{
+		key            = "SplitterSurge",
+		label          = "SPLITTER SURGE",
+		minWave        = 4,     -- gated like Splitter spawning
+		enemyCountMult = 1.0,   -- splitters already produce children — don't bump count
+		speedMult      = 1.0,
+		forceType      = "Splitter",
+	},
+}
+
 -- Currency (awarded on ban)
 Config.COIN_TROLL            = 10
 Config.COIN_SPAMMER          = 20

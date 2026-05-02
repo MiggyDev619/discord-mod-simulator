@@ -106,14 +106,21 @@ local waveState = {
 	total        = 0,
 	secondsLeft  = 0,
 	enemyCount   = 0,
+	modifier     = nil,      -- string | nil — set on wave start, cleared on next wave
 }
 
 local function renderWaveLabel()
 	if runEnded then return end
 	if waveState.mode == "wave" then
-		waveLabel.Text = string.format("Wave %d / %d  —  %d left",
-			waveState.wave, waveState.total, waveState.enemyCount)
-		waveLabel.TextColor3 = Theme.Zinc50
+		if waveState.modifier then
+			waveLabel.Text = string.format("Wave %d / %d  —  %s  —  %d left",
+				waveState.wave, waveState.total, waveState.modifier, waveState.enemyCount)
+			waveLabel.TextColor3 = Theme.Yellow400
+		else
+			waveLabel.Text = string.format("Wave %d / %d  —  %d left",
+				waveState.wave, waveState.total, waveState.enemyCount)
+			waveLabel.TextColor3 = Theme.Zinc50
+		end
 	elseif waveState.mode == "break" then
 		waveLabel.Text = string.format("Wave %d / %d in %ds",
 			waveState.wave, waveState.total, waveState.secondsLeft)
@@ -121,11 +128,12 @@ local function renderWaveLabel()
 	end
 end
 
-waveStarted.OnClientEvent:Connect(function(wave, total)
+waveStarted.OnClientEvent:Connect(function(wave, total, modifierName)
 	if runEnded then return end
-	waveState.mode  = "wave"
-	waveState.wave  = wave
-	waveState.total = total
+	waveState.mode     = "wave"
+	waveState.wave     = wave
+	waveState.total    = total
+	waveState.modifier = modifierName  -- nil for clean waves
 	renderWaveLabel()
 end)
 
