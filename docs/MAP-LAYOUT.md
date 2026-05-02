@@ -36,11 +36,14 @@ Total: 12 parts. All anchored, parented to `Workspace.Map`.
 
 ---
 
-## The script
+## The script (v2 — fixes Z-fighting + recolors baseplate / spawn / EnemyStart / ServerZone)
 
 ```lua
--- DMS map polish — Phase 5 Day 23
--- Run ONCE from Studio command bar. Safe to re-run.
+-- DMS map polish — Phase 5 Day 23 (v2)
+-- Run from Studio command bar. Safe to re-run (idempotent).
+-- Changes from v1: yellow strips lifted ABOVE wall (no more Z-fight flicker),
+-- baseplate recolored to themed dark, EnemyStart/ServerZone recolored to brand,
+-- default SpawnLocation moved behind the moderator's desk so it's out of the lane.
 
 local Map        = workspace:WaitForChild("Map")
 local enemyStart = Map:WaitForChild("EnemyStart")
@@ -48,10 +51,12 @@ local serverZone = Map:WaitForChild("ServerZone")
 
 local YELLOW   = Color3.fromRGB(250, 204, 21)
 local DARK     = Color3.fromRGB(15, 15, 15)
+local FLOOR    = Color3.fromRGB(28, 28, 32)   -- baseplate themed dark
 local TOWER    = Color3.fromRGB(25, 25, 28)
 local WOOD     = Color3.fromRGB(50, 30, 18)
 local PLASTIC  = Color3.fromRGB(15, 15, 18)
 local BLURPLE  = Color3.fromRGB(88, 101, 242)
+local DANGER   = Color3.fromRGB(180, 40, 40)  -- EnemyStart warning red
 
 local PREFIX = "MapPolish_"
 
@@ -90,16 +95,21 @@ local midpoint   = startPos:Lerp(endPos, 0.5)
 
 -- Boundary walls. CFrame.lookAt orients the part's -Z toward laneDir, so its
 -- Z dimension (length) runs along the lane. X is wall thickness, Y is height.
+local wallThick = 1
 local leftCenter  = midpoint + lanePerp * wallOffset + Vector3.new(0, wallHeight/2, 0)
 local rightCenter = midpoint - lanePerp * wallOffset + Vector3.new(0, wallHeight/2, 0)
 
-makePart("WallLeft",  Vector3.new(1, wallHeight, wallLen), CFrame.lookAt(leftCenter,  leftCenter  + laneDir), DARK, Enum.Material.Slate)
-makePart("WallRight", Vector3.new(1, wallHeight, wallLen), CFrame.lookAt(rightCenter, rightCenter + laneDir), DARK, Enum.Material.Slate)
+makePart("WallLeft",  Vector3.new(wallThick, wallHeight, wallLen), CFrame.lookAt(leftCenter,  leftCenter  + laneDir), DARK, Enum.Material.Slate)
+makePart("WallRight", Vector3.new(wallThick, wallHeight, wallLen), CFrame.lookAt(rightCenter, rightCenter + laneDir), DARK, Enum.Material.Slate)
 
--- Yellow Neon accent strips along the top of each wall (brand-line).
-local stripY = wallHeight/2 - 0.2
-makePart("WallLeftStrip",  Vector3.new(0.4, 0.4, wallLen), CFrame.lookAt(leftCenter  + Vector3.new(0, stripY, 0), leftCenter  + Vector3.new(0, stripY, 0) + laneDir), YELLOW, Enum.Material.Neon)
-makePart("WallRightStrip", Vector3.new(0.4, 0.4, wallLen), CFrame.lookAt(rightCenter + Vector3.new(0, stripY, 0), rightCenter + Vector3.new(0, stripY, 0) + laneDir), YELLOW, Enum.Material.Neon)
+-- Yellow Neon coping along the top of each wall. Sits ABOVE the wall (not
+-- embedded — that's what caused v1's Z-fight flicker) and slightly wider so
+-- it overhangs the wall edges (clean coping look, no coplanar surfaces).
+local stripHeight = 0.5
+local stripWidth  = wallThick + 0.4  -- 0.2 overhang on each side
+local stripY      = wallHeight/2 + stripHeight/2  -- centered ABOVE the wall top
+makePart("WallLeftStrip",  Vector3.new(stripWidth, stripHeight, wallLen), CFrame.lookAt(leftCenter  + Vector3.new(0, stripY, 0), leftCenter  + Vector3.new(0, stripY, 0) + laneDir), YELLOW, Enum.Material.Neon)
+makePart("WallRightStrip", Vector3.new(stripWidth, stripHeight, wallLen), CFrame.lookAt(rightCenter + Vector3.new(0, stripY, 0), rightCenter + Vector3.new(0, stripY, 0) + laneDir), YELLOW, Enum.Material.Neon)
 
 -- Server tower behind the zone, slightly raised so it reads as a "rack."
 local towerCenter = endPos + laneDir * 8 + Vector3.new(0, 8, 0)
@@ -123,8 +133,52 @@ makePart("MonitorBack",   Vector3.new(3, 2, 0.2),   CFrame.lookAt(monitorBackCen
 local screenCenter = monitorBackCenter + laneDir * 0.13
 makePart("MonitorScreen", Vector3.new(2.8, 1.8, 0.05), CFrame.lookAt(screenCenter, screenCenter + laneDir), BLURPLE, Enum.Material.Neon)
 
-print(string.format("[MapPolish] Created 12 parts around lane (length: %.1f studs)", laneLen))
+-- Recolor existing parts (NOT polish-prefixed — these are persistent map parts
+-- the user originally placed). Re-running the script reapplies these colors,
+-- so if you tweak by hand they'll get clobbered — by design (single source of
+-- truth for the themed look).
+
+-- Baseplate: themed dark replaces the default grey.
+local baseplate = workspace:FindFirstChild("Baseplate")
+if baseplate and baseplate:IsA("BasePart") then
+    baseplate.Color    = FLOOR
+    baseplate.Material = Enum.Material.SmoothPlastic
+end
+
+-- EnemyStart: warning red Neon — reads as "danger spawn point."
+enemyStart.Color    = DANGER
+enemyStart.Material = Enum.Material.Neon
+enemyStart.Transparency = 0.4  -- slightly translucent so it doesn't dominate visually
+
+-- ServerZone: Discord blurple Neon — matches the monitor screen, brand-coherent.
+serverZone.Color    = BLURPLE
+serverZone.Material = Enum.Material.Neon
+serverZone.Transparency = 0.3
+
+-- Default SpawnLocation (the green spawn pad) usually sits mid-lane. Move it
+-- behind the moderator's desk so it's out of the lane and doesn't visually
+-- compete with the brand palette. Resize small + recolor to brand.
+local spawn = workspace:FindFirstChildOfClass("SpawnLocation")
+if spawn then
+    spawn.Position    = deskCenter - laneDir * 4 + Vector3.new(0, -1.4, 0)  -- behind desk, on floor
+    spawn.Size        = Vector3.new(4, 1, 4)
+    spawn.Color       = YELLOW
+    spawn.Material    = Enum.Material.Neon
+    spawn.Transparency = 0.5
+end
+
+print(string.format("[MapPolish] Created 12 parts + recolored baseplate/EnemyStart/ServerZone/SpawnLocation around lane (length: %.1f studs)", laneLen))
 ```
+
+### What v2 changes vs v1
+
+| Issue | v1 behavior | v2 fix |
+|---|---|---|
+| Yellow strip flicker | Strip embedded in wall top — coplanar Z-fight | Strip lifted to sit ABOVE wall, slightly wider for overhang look |
+| Grey baseplate | Untouched | Recolored to themed dark, SmoothPlastic |
+| Green SpawnLocation in middle of lane | Untouched | Moved behind desk, resized small, recolored brand yellow |
+| Blue ServerZone | Untouched | Discord blurple Neon (matches monitor) |
+| Default-color EnemyStart | Untouched | Warning red Neon, slightly translucent |
 
 ---
 
