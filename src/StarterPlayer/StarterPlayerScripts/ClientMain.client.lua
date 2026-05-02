@@ -30,6 +30,8 @@ local currencyLabel = mainUI:WaitForChild("CurrencyLabel")
 local waveLabel     = mainUI:WaitForChild("WaveLabel")
 local upgradeButton = mainUI:WaitForChild("UpgradeButton")
 local upgradePanel  = mainUI:WaitForChild("UpgradePanel")
+local shopButton    = mainUI:WaitForChild("ShopButton")
+local shopPanel     = mainUI:WaitForChild("ShopPanel")
 local cooldownPanel = mainUI:WaitForChild("CooldownPanel")
 local flashOverlay  = mainUI:WaitForChild("FlashOverlay")
 local gameOverPanel = mainUI:WaitForChild("GameOverPanel")
@@ -375,9 +377,124 @@ for i, upg in ipairs(Config.COOLDOWN_UPGRADES) do
 	end
 end
 
+-- Mutex toggle: only one of (UpgradePanel, ShopPanel) visible at a time so
+-- they don't overlap (both anchor top-right at y=108).
 upgradeButton.MouseButton1Click:Connect(function()
+	shopPanel.Visible    = false
 	upgradePanel.Visible = not upgradePanel.Visible
 end)
+
+shopButton.MouseButton1Click:Connect(function()
+	upgradePanel.Visible = false
+	shopPanel.Visible    = not shopPanel.Visible
+end)
+
+-- Shop rows: gamepasses + dev products. Each row has a label, a description
+-- subline (smaller grey text), and a "BUY (NN R$)" button on the right that
+-- triggers Roblox's purchase prompt. Owned gamepasses show "OWNED" instead.
+local MarketplaceService = game:GetService("MarketplaceService")
+
+local function makeShopRow(layoutOrder, label, description, rowName)
+	local row = Instance.new("Frame")
+	row.Name                   = rowName
+	row.Size                   = UDim2.new(1, 0, 0, 60)
+	row.BackgroundTransparency = 1
+	row.LayoutOrder            = layoutOrder
+	row.ZIndex                 = 51
+
+	local title = Instance.new("TextLabel")
+	title.Size                   = UDim2.new(0.6, -4, 0, 22)
+	title.Position               = UDim2.new(0, 0, 0, 4)
+	title.BackgroundTransparency = 1
+	title.TextColor3             = Color3.fromRGB(250, 250, 250)
+	title.Font                   = Enum.Font.GothamBold
+	title.TextSize               = 15
+	title.TextXAlignment         = Enum.TextXAlignment.Left
+	title.TextYAlignment         = Enum.TextYAlignment.Center
+	title.Text                   = label
+	title.ZIndex                 = 52
+	title.Parent                 = row
+
+	local desc = Instance.new("TextLabel")
+	desc.Size                   = UDim2.new(0.6, -4, 0, 30)
+	desc.Position               = UDim2.new(0, 0, 0, 28)
+	desc.BackgroundTransparency = 1
+	desc.TextColor3             = Color3.fromRGB(170, 170, 170)
+	desc.Font                   = Enum.Font.Gotham
+	desc.TextSize               = 11
+	desc.TextXAlignment         = Enum.TextXAlignment.Left
+	desc.TextYAlignment         = Enum.TextYAlignment.Top
+	desc.TextWrapped            = true
+	desc.Text                   = description
+	desc.ZIndex                 = 52
+	desc.Parent                 = row
+
+	local button = Instance.new("TextButton")
+	button.Name                  = "Buy"
+	button.Size                  = UDim2.new(0.4, 0, 0, 44)
+	button.Position              = UDim2.new(0.6, 4, 0, 8)
+	button.BackgroundColor3      = Color3.fromRGB(250, 204, 21)
+	button.BackgroundTransparency = 0
+	button.TextColor3            = Color3.fromRGB(9, 9, 11)
+	button.Font                  = Enum.Font.GothamBold
+	button.TextSize              = 14
+	button.AutoButtonColor       = true
+	button.BorderSizePixel       = 0
+	button.Text                  = "Buy"
+	button.ZIndex                = 52
+	button.Parent                = row
+	local buttonCorner = Instance.new("UICorner")
+	buttonCorner.CornerRadius = UDim.new(0, 6)
+	buttonCorner.Parent       = button
+
+	return row, button
+end
+
+-- Gamepass rows (LayoutOrder 1..N — show first)
+for i, gp in ipairs(Config.GAMEPASSES) do
+	local row, button = makeShopRow(i, gp.label, gp.description, gp.key .. "PassRow")
+	row.Parent = shopPanel
+
+	local function refresh()
+		if player:GetAttribute(gp.effectAttr) then
+			button.Text             = "OWNED"
+			button.AutoButtonColor  = false
+			button.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+			button.TextColor3       = Color3.fromRGB(250, 250, 250)
+		else
+			button.Text             = string.format("Buy (%d R$)", gp.price)
+			button.AutoButtonColor  = true
+			button.BackgroundColor3 = Color3.fromRGB(250, 204, 21)
+			button.TextColor3       = Color3.fromRGB(9, 9, 11)
+		end
+	end
+	refresh()
+	player:GetAttributeChangedSignal(gp.effectAttr):Connect(refresh)
+
+	button.MouseButton1Click:Connect(function()
+		if player:GetAttribute(gp.effectAttr) then return end
+		if gp.id == 0 then
+			print("[ClientMain] Gamepass id placeholder — set real id in Config first")
+			return
+		end
+		MarketplaceService:PromptGamePassPurchase(player, gp.id)
+	end)
+end
+
+-- Dev product rows (LayoutOrder 100..N — show after gamepasses)
+for i, dp in ipairs(Config.DEV_PRODUCTS) do
+	local row, button = makeShopRow(100 + i, dp.label, dp.description, dp.key .. "ProductRow")
+	row.Parent = shopPanel
+
+	button.Text = string.format("Buy (%d R$)", dp.price)
+	button.MouseButton1Click:Connect(function()
+		if dp.id == 0 then
+			print("[ClientMain] Product id placeholder — set real id in Config first")
+			return
+		end
+		MarketplaceService:PromptProductPurchase(player, dp.id)
+	end)
+end
 
 -- Cooldown panel: each tool LocalScript writes a `<Tool>ReadyAt` attribute on
 -- the LocalPlayer when activated. Per frame we compute remaining seconds, dim

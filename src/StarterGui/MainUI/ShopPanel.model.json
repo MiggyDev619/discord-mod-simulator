@@ -1,7 +1,7 @@
 {
   "className": "Frame",
   "properties": {
-    "Size": {"UDim2": [[0, 320], [0, 0]]},
+    "Size": {"UDim2": [[0, 360], [0, 0]]},
     "Position": {"UDim2": [[1, -12], [0, 108]]},
     "AnchorPoint": {"Vector2": [1, 0]},
     "BackgroundColor3": [0.0353, 0.0353, 0.0431],
@@ -12,15 +12,12 @@
     "AutomaticSize": "Y"
   },
   "children": [
-    {
-      "className": "UICorner",
-      "properties": { "CornerRadius": {"UDim": [0, 8]} }
-    },
+    { "className": "UICorner",  "properties": { "CornerRadius": {"UDim": [0, 8]} } },
     {
       "className": "UIStroke",
       "properties": {
-        "Color": [0.9804, 0.8, 0.0824],
-        "Thickness": 1,
+        "Color":        [0.9804, 0.8, 0.0824],
+        "Thickness":    1,
         "Transparency": 0.4
       }
     },
@@ -36,9 +33,9 @@
     {
       "className": "UIListLayout",
       "properties": {
-        "FillDirection": "Vertical",
-        "Padding": {"UDim": [0, 6]},
-        "SortOrder": "LayoutOrder",
+        "FillDirection":       "Vertical",
+        "Padding":             {"UDim": [0, 6]},
+        "SortOrder":           "LayoutOrder",
         "HorizontalAlignment": "Center"
       }
     }

@@ -46,6 +46,16 @@ function GameManager.GetHealth()
 	return serverHealth
 end
 
+-- Restore server health by `amount`, capped at SERVER_MAX_HEALTH. Used by the
+-- Instant Revive dev product to refill mid-run. No-op if the run is already
+-- over (use Reset for that path).
+function GameManager.Heal(amount)
+	if isGameOver then return end
+	serverHealth = math.min(Config.SERVER_MAX_HEALTH, serverHealth + amount)
+	print("[GameManager] Healed +", amount, "→", serverHealth)
+	healthChanged:FireAllClients(serverHealth, Config.SERVER_MAX_HEALTH)
+end
+
 function GameManager.IsGameOver()
 	return isGameOver
 end
