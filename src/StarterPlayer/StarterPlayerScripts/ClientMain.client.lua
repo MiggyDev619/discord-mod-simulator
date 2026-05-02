@@ -514,6 +514,21 @@ local cooldownSlots = {
 }
 for _, s in ipairs(cooldownSlots) do
 	s.timer = s.slot:WaitForChild("Timer")
+	-- Sweep gradient: a transparency wedge on the slot that rotates while on
+	-- cooldown. Reads as a "spinning sweep" indicator — same idiom as MOBA
+	-- cooldown UIs. Disabled when slot is ready (so the slot looks flat).
+	local sweep = Instance.new("UIGradient")
+	sweep.Color        = ColorSequence.new(Color3.fromRGB(255, 255, 255))
+	sweep.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0,    0.6),
+		NumberSequenceKeypoint.new(0.45, 0.6),
+		NumberSequenceKeypoint.new(0.5,  0.0),
+		NumberSequenceKeypoint.new(0.55, 0.6),
+		NumberSequenceKeypoint.new(1,    0.6),
+	})
+	sweep.Enabled = false
+	sweep.Parent  = s.slot
+	s.sweep       = sweep
 	if s.unlockKey then
 		local function refreshSlotVisible()
 			s.slot.Visible = player:GetAttribute(s.unlockKey .. "Unlocked") == true
@@ -521,6 +536,123 @@ for _, s in ipairs(cooldownSlots) do
 		refreshSlotVisible()
 		player:GetAttributeChangedSignal(s.unlockKey .. "Unlocked"):Connect(refreshSlotVisible)
 	end
+end
+
+-- Purchase confirmation toast: top-center pill that fades in/out when a
+-- gamepass or dev product purchase succeeds. Handles BOTH gamepass and product
+-- prompts since the user-facing experience is identical.
+local toast = Instance.new("Frame")
+toast.Name                   = "PurchaseToast"
+toast.Size                   = UDim2.new(0, 320, 0, 44)
+toast.Position               = UDim2.new(0.5, 0, 0, 76)
+toast.AnchorPoint            = Vector2.new(0.5, 0)
+toast.BackgroundColor3       = Color3.fromRGB(34, 197, 94)
+toast.BackgroundTransparency = 1
+toast.BorderSizePixel        = 0
+toast.ZIndex                 = 95
+toast.Visible                = false
+toast.Parent                 = mainUI
+local toastCorner = Instance.new("UICorner")
+toastCorner.CornerRadius = UDim.new(0, 8)
+toastCorner.Parent       = toast
+local toastLabel = Instance.new("TextLabel")
+toastLabel.Size                   = UDim2.new(1, -16, 1, 0)
+toastLabel.Position               = UDim2.new(0, 8, 0, 0)
+toastLabel.BackgroundTransparency = 1
+toastLabel.Font                   = Enum.Font.GothamBold
+toastLabel.TextSize               = 16
+toastLabel.TextColor3             = Color3.fromRGB(9, 9, 11)
+toastLabel.TextXAlignment         = Enum.TextXAlignment.Center
+toastLabel.TextYAlignment         = Enum.TextYAlignment.Center
+toastLabel.TextTransparency       = 1
+toastLabel.Text                   = ""
+toastLabel.ZIndex                 = 96
+toastLabel.Parent                 = toast
+
+local TOAST_FADE_IN  = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+local TOAST_FADE_OUT = TweenInfo.new(0.4, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+local TOAST_HOLD     = 2.5
+
+local function showToast(msg)
+	toastLabel.Text = msg
+	toast.Visible   = true
+	TweenService:Create(toast,      TOAST_FADE_IN, { BackgroundTransparency = 0.1 }):Play()
+	TweenService:Create(toastLabel, TOAST_FADE_IN, { TextTransparency       = 0   }):Play()
+	task.delay(TOAST_FADE_IN.Time + TOAST_HOLD, function()
+		TweenService:Create(toast,      TOAST_FADE_OUT, { BackgroundTransparency = 1 }):Play()
+		TweenService:Create(toastLabel, TOAST_FADE_OUT, { TextTransparency       = 1 }):Play()
+		task.delay(TOAST_FADE_OUT.Time, function() toast.Visible = false end)
+	end)
+end
+
+MarketplaceService.PromptGamePassPurchaseFinished:Connect(function(_player, passId, wasPurchased)
+	if not wasPurchased then return end
+	for _, gp in ipairs(Config.GAMEPASSES) do
+		if gp.id == passId then
+			showToast("Bought: " .. gp.label .. " — effect active!")
+			return
+		end
+	end
+end)
+
+MarketplaceService.PromptProductPurchaseFinished:Connect(function(_userId, productId, wasPurchased)
+	if not wasPurchased then return end
+	for _, dp in ipairs(Config.DEV_PRODUCTS) do
+		if dp.id == productId then
+			showToast("Used: " .. dp.label)
+			return
+		end
+	end
+end)
+
+-- Touch controls: detect touch-only devices and adapt. UIScale shrinks the
+-- whole HUD to fit phone screens; virtual KICK button mirrors Tool.Activated
+-- on Kick Boot since touch users won't have a clean way to fire AOE while
+-- still aiming the camera.
+local UserInputService = game:GetService("UserInputService")
+local kickEnemiesRemote = remotes:WaitForChild("KickEnemies")
+
+if UserInputService.TouchEnabled and not UserInputService.MouseEnabled then
+	local hudScale = Instance.new("UIScale")
+	hudScale.Scale  = 0.75
+	hudScale.Parent = mainUI
+
+	local virtualKick = Instance.new("TextButton")
+	virtualKick.Name                  = "VirtualKickButton"
+	virtualKick.Size                  = UDim2.new(0, 96, 0, 96)
+	virtualKick.Position              = UDim2.new(1, -24, 1, -132)
+	virtualKick.AnchorPoint           = Vector2.new(1, 1)
+	virtualKick.BackgroundColor3      = Color3.fromRGB(34, 197, 94)
+	virtualKick.BackgroundTransparency = 0.1
+	virtualKick.BorderSizePixel       = 0
+	virtualKick.Text                  = "KICK"
+	virtualKick.TextColor3            = Color3.fromRGB(9, 9, 11)
+	virtualKick.Font                  = Enum.Font.GothamBold
+	virtualKick.TextSize              = 22
+	virtualKick.AutoButtonColor       = true
+	virtualKick.ZIndex                = 60
+	virtualKick.Parent                = mainUI
+	local vkCorner = Instance.new("UICorner")
+	vkCorner.CornerRadius = UDim.new(1, 0)  -- circular
+	vkCorner.Parent       = virtualKick
+	-- Hide while no Kick Boot unlock — same gating as the cooldown slot.
+	local function refreshVk()
+		virtualKick.Visible = player:GetAttribute("KickBootUnlocked") == true
+	end
+	refreshVk()
+	player:GetAttributeChangedSignal("KickBootUnlocked"):Connect(refreshVk)
+
+	local Workspace = game:GetService("Workspace")
+	virtualKick.MouseButton1Click:Connect(function()
+		-- Mirror KickBootScript's send: camera-derived flat lookDir.
+		local cam     = Workspace.CurrentCamera
+		local look    = cam.CFrame.LookVector
+		local flat    = Vector3.new(look.X, 0, look.Z)
+		if flat.Magnitude < 0.01 then return end
+		kickEnemiesRemote:FireServer(flat.Unit)
+	end)
+
+	print("[ClientMain] Touch device detected — HUD scaled 0.75 + virtual KICK button enabled")
 end
 
 RunService.Heartbeat:Connect(function()
@@ -532,9 +664,12 @@ RunService.Heartbeat:Connect(function()
 			s.slot.BackgroundTransparency = COOLDOWN_DIM_TRANSPARENCY
 			s.timer.Text                  = string.format("%.1f", remaining)
 			s.timer.Visible               = true
+			s.sweep.Enabled  = true
+			s.sweep.Rotation = (now * 360) % 360  -- 1 rev/sec — readable, not nauseating
 		else
 			s.slot.BackgroundTransparency = COOLDOWN_LIT_TRANSPARENCY
 			s.timer.Visible               = false
+			s.sweep.Enabled               = false
 		end
 	end
 end)
