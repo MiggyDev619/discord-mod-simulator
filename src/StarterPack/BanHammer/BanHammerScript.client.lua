@@ -16,8 +16,8 @@ local player    = Players.LocalPlayer
 local lastSwing = 0
 
 -- Camera shake tuning (feel, not balance — kept local)
-local SHAKE_DURATION  = 0.18
-local SHAKE_MAGNITUDE = 0.35
+local SHAKE_DURATION  = 0.30
+local SHAKE_MAGNITUDE = 0.75
 
 local shakeActive = false
 local swingTrack  -- AnimationTrack, loaded on Equipped
