@@ -90,6 +90,9 @@ Config.UPGRADE_COOLDOWN_REDUCTION   = 0.1  -- seconds shaved off BAN_COOLDOWN pe
 Config.UPGRADE_COOLDOWN_MIN         = 0.1  -- floor — cooldown will never drop below this
 Config.UPGRADE_COOLDOWN_MAX_LEVEL   = 3
 
+-- Persistence (DataStore)
+Config.PERSISTENCE_AUTOSAVE_INTERVAL = 60  -- seconds between dirty-player autosaves; PlayerRemoving + BindToClose also save
+
 -- Effects
 -- Drop a Roblox sound asset ID here (e.g. "rbxassetid://9125657040"). Empty string = silent ban.
 -- In Studio: View → Toolbox → search "impact" / "whoosh" / "punch", right-click → Copy Asset ID.

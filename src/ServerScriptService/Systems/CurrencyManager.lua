@@ -33,6 +33,15 @@ function CurrencyManager.AddCoins(player, amount)
 	player:SetAttribute("Coins", coins)
 end
 
+function CurrencyManager.LoadFromSave(player, data)
+	if not player or not player.Parent then return end
+	local coins         = tonumber(data.coins) or 0
+	local cooldownLevel = math.clamp(tonumber(data.cooldownLevel) or 0, 0, Config.UPGRADE_COOLDOWN_MAX_LEVEL)
+	player:SetAttribute("Coins",         coins)
+	player:SetAttribute("CooldownLevel", cooldownLevel)
+	player:SetAttribute("BanCooldown",   cooldownForLevel(cooldownLevel))
+end
+
 function CurrencyManager.TryPurchaseCooldown(player)
 	local level = player:GetAttribute("CooldownLevel") or 0
 	if level >= Config.UPGRADE_COOLDOWN_MAX_LEVEL then
