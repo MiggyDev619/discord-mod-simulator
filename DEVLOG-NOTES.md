@@ -12,6 +12,77 @@ Raw build notes for the Discord Mod Simulator Roblox project, structured for a d
 
 ---
 
+## 2026-05-02 — Days 13–18 / Phase 3 close (Retention)
+
+> Single-day push through all of Phase 3 — Days 13 through 18 plus a Day 14.5 detour that wasn't on the original 30-day plan. Six commits ahead of the Phase 2 close, finishing on commit `ce79754`. Game now persists per-player progression across sessions, has 3 tool-unlock gates, 3 wave modifiers, an XP / level system, and a working restart loop with stats screen.
+
+### What "Phase 3 closed" means against `plan.md` §7
+
+| Phase 3 scope (Days 13–18) | Status |
+|---|---|
+| Upgrade tree, persistent upgrades, tool upgrades (Days 13–14) | ✓ DataStore + 4 cooldown upgrades + 3 tool unlocks. Schema v4 with full v1→v2→v3→v4 migration chain. Mock fallback for unpublished Studio runs. |
+| Random waves + modifiers (Day 15) | ✓ 3 modifiers (Spam Storm, Toxic Wave, Splitter Surge), 30% chance from wave 3+. `Config.WAVE_MODIFIERS` is the source of truth — adding a new modifier is one entry. |
+| XP, player levels, unlock new tools (Day 16–17) | ✓ XP from `RewardForKill` (base, not combo'd), per-level `level * 100`, cap 25. "Unlock new tools" interpreted as gating EXISTING tools behind an unlock cost (Day 14.5) since no new tools were designed. |
+| Restart flow, retry button, game over screen (Day 18) | ✓ `GameOverPanel` modal + `RetryRun` RemoteEvent + `GameManager.Reset` + `EnemySpawner.ClearAll` + `RoundManager.startRun()` re-entrant. |
+
+### The Day 14.5 detour (combat depth + tool unlocks)
+
+Mid-Phase 3, a feature batch landed that wasn't in the original 30-day plan:
+- **Mute Gun reworked** from a slow utility into a hitscan freeze gun: gun-shaped model (Handle + Barrel + Sight, Massless on top parts so grip physics is handle-driven), mouse-cursor raycast at 50 studs, cyan tracer + muzzle flash. **Two-hit destroy** — first hit sets `MuteFrozenUntil` + freezes blue; second hit on a still-frozen target invokes `EnemySpawner.DestroyEnemy` (the same shared destroy path Ban uses, so Splitter children still spawn).
+- **Combo bonus** (`COMBO_MULTIPLIER = 2`) doubles coin reward when destroying an enemy that had `FrozenUntil` OR `MuteFrozenUntil` active. Wired through `CurrencyManager.RewardForKill`, applied at all destroy sites.
+- **Kick rewards** — non-destructive AOE now awards `COIN_KICK_PER_HIT = 5` per cone-hit, doubled if the enemy was frozen. Was previously zero-reward.
+- **Tool unlocks** — Mute / Timeout / Kick moved from `StarterPack` to `ReplicatedStorage/Tools/`; new `ToolGranter.server.lua` clones unlocked tools to Backpack on `CharacterAdded` AND on unlock attribute flip. Costs: MuteGun 100, KickBoot 150, TimeoutCard 200. Schema v3 with v2→v3 grandfathering for in-flight playtest saves.
+
+This was a player request mid-session ("make Mute Gun an actual gun that shoots, give coins for kicks, give bonus for combos, lock the other tools behind purchases"). Roughly 2 hours of work spread across 17 files — comparable in scope to a full day.
+
+### Decisions made (and why)
+
+- **Schema-versioned datastore from Day 13.** `DMS_PlayerData_v1` (the `_v1` suffix) is a hard-reset hammer for breaking changes; the `version` field inside each save is the per-record migration path. Cheap to set up both, expensive to retrofit. By Phase 3 close we've already chained v1→v2→v3→v4 with no save loss — the pattern paid off.
+- **Mock DataStore in Studio for unpublished runs.** Detected via `RunService:IsStudio() and game.PlaceId == 0`. Returns a table-backed shim. Persists across `PlayerRemoving` within a session but NOT across Stop→Play (Studio recreates the DataModel on Stop, destroying module state). Caught me off guard mid-session — wrote a misleading comment ("persists per Studio session") then corrected.
+- **Place published mid-Day-13.** Switched from local-only `.rbxlx` workflow to a published place to enable real DataStore. Game Settings → Security → API Services flipped on. Local `rojo serve` workflow continues unchanged.
+- **CurrencyManager and PersistenceManager are the project's first ModuleScript-with-Script pairing.** PersistenceManager is a `.server.lua` (no public API — side-effect installer). CurrencyManager is a `.lua` ModuleScript (other modules `require` it). PersistenceManager imports CurrencyManager one-way; dirty tracking via attribute change signals (no event plumbing).
+- **Combo multiplier on coins, NOT XP.** XP always awards the base reward. Reasoning: combos are about chasing reward streaks (coins → upgrades → more combos), while XP is about steady progression (play more = level more). Doubling XP on combos would let combo-chaining players outlevel everyone else.
+- **Mute Gun second hit shares Ban's destroy path via `EnemySpawner.DestroyEnemy` BindableFunction.** No duplicate Splitter logic, no duplicate combo logic, no duplicate effects. One source of truth for "an enemy died because a player did something." Adding a 4th destructive tool would just call into the same function.
+- **Tool unlocks default to FALSE on init, get grandfathered=true on v2→v3 load.** Two paths through the same code — fresh players see the locked state and have to buy in; existing testers (just me) keep their full kit. No special-case migration code beyond the one line in `migrate()`.
+- **`startRun()` doesn't use a runId / cancellation token.** The wave loop only halts when `IsGameOver()` is true; `Reset()` only fires from a player click on the GameOverPanel button, which only appears after `gameOver`/`gameWon`. By the time Retry happens, the old loop has fully exited. Not bulletproof for a multiplayer scenario where one player retries while another is mid-win, but solo-correct.
+- **Wave modifiers gated by `minWave`.** Spam Storm and Toxic Wave from wave 3, Splitter Surge from wave 4 (matches Splitter's normal eligibility). Picks uniformly from eligible. 30% chance per wave. Tunable in `Config.MODIFIER_CHANCE`.
+- **Mute Gun rename rejected by user** ("keep mute gun"). Name is now slightly inaccurate (the tool freezes, doesn't mute) but the player asked for it. Filing this as a teaching moment: clarifying questions surface user preferences that defaults wouldn't.
+
+### Phase 3 by the numbers
+
+- 6 commits: `a3244e2` (Day 13) → `0dd31d9` (plan tablet/phone) → `4cfabed` (Day 14 + 14.5) → `c0bc653` (Day 15) → `12a2f88` (Day 16-17) → `ce79754` (Day 18).
+- 17 commits ahead of `origin/main` total since project start, never pushed.
+- New files: `PersistenceManager`, `ToolGranter`, `MuteGunSetup`, `Barrel.model.json`, `Sight.model.json`, `UpgradePanel.model.json`, `GameOverPanel.model.json`. Plus the 3 tool directories renamed to `ReplicatedStorage/Tools/`.
+- New `Config` keys: 4 cooldown upgrade defs, 3 tool unlock defs, 3 wave modifier defs, plus `COMBO_MULTIPLIER`, `COIN_KICK_PER_HIT`, `XP_PER_LEVEL_BASE`, `XP_MAX_LEVEL`, `MUTE_FREEZE_DURATION`, `MODIFIER_CHANCE`, `PERSISTENCE_AUTOSAVE_INTERVAL`. Removed: `MUTE_SLOW_FACTOR`, `MUTE_DURATION`, the old flat `UPGRADE_COOLDOWN_*` keys.
+- Schema versions shipped: v1 → v2 → v3 → v4. Full migration chain in `PersistenceManager.migrate()`.
+- Test cycles: ~5 mid-Phase-3 (mostly during Day 13 + 14.5).
+
+### What's intentionally not built yet (Phase 4+ unblocked)
+
+- **Phase 4 monetization (Days 19–22).** Gamepasses + Dev Products. Pricing decisions need the user — autonomous defaults are risky on real-money flow. Place is published, so Dev Products can be created in the Roblox Creator Hub.
+- **Phase 5 polish + viral (Days 23–27).** Better map, lighting, UI cleanup, **touch controls + tablet/phone playtest** (per `plan.md` §9 — verification needs real devices), meme enemies, multiplayer polish.
+- **Phase 6 launch (Days 28–30).** Icon, thumbnail, description, public release.
+- **DataStore queue warning on disconnect.** Saw `DataStore request was added to queue` in Day 14.5 testing — autosave + PlayerRemoving + BindToClose all firing close together brushes Roblox's per-key rate limit. Benign so far (no dropped saves). Optimization: skip autosave-on-leave when PlayerRemoving will save anyway. Revisit if a save is ever actually dropped.
+- **Combo + Kick interactions.** Kick on a frozen enemy gives 10 coins per hit (5 × 2 combo), but Kick doesn't destroy the enemy — so the combo timer remains, and a follow-up Ban or Mute-second-hit also gets the combo. Intentional: combos cascade across tools. Watch for any feel issues at high cooldown levels.
+- **Studio retry race in multiplayer.** `startRun()` doesn't use a runId token. Solo-safe (loop has fully exited by Retry click). Multiplayer would need cancellation. Flag for Phase 5 multiplayer polish.
+
+### Blockers for next session
+
+- **Phase 4 needs human pricing decisions.** Don't autonomously default Gamepass costs / Dev Product prices — these affect real money once players show up. Pitch designs first, get sign-off, then code.
+- **Working tree clean. Push to origin is the user's call** — 17 commits ahead, never pushed by intent.
+
+### Hooks for the post
+
+Pick one. Not all.
+
+- **"Schema versioning paid for itself in 6 days."** — Day 13 set up v1 with the version field "just in case." By Phase 3 close we'd shipped v1→v2→v3→v4 across the full lifecycle (split a single field, added a new field, grandfathered legacy state). Each migration was 4–6 lines. The alternative — wiping saves on every shape change — would have lost the user's playtest progression three times.
+- **"How a 'simple gun' became a 17-file refactor."** — the Mute Gun rework story. Started as "make it a real gun." Cascaded into: gun model (3 parts + setup script), hitscan with mouse raycast, two-hit state machine, combo system, Kick rewards, tool unlock system (3 new tool grants + new server module + schema migration), upgrade panel rewrite, persistence v3. Lesson: gameplay reworks rarely stay scoped to the gameplay file.
+- **"`EnemySpawner.DestroyEnemy` is the kill API now."** — the BindableFunction extracted on Day 14.5 became the single point through which any tool destroys an enemy. Splitter children, combo reward, hit flash, ban effect — all in one place. When the player adds a fourth destructive tool (someday), it'll be a one-line `destroyEnemy:Invoke(player, enemyPart)`.
+- **"Tool unlocks are a free retention loop."** — Day 14.5's incidental win. Locking the 3 non-Ban tools behind coin costs (100 / 150 / 200) gives a fresh player a multi-hour goal trail without any new mechanics. The tools always existed — the unlock gate IS the progression.
+- **"Mute Gun freeze + Ban combo is the most satisfying loop in the game right now."** — the gameplay finding. Shoot (freeze blue) → run up → ban hammer → 2× coins + COMBO! tag in chat. Rewards both planning and execution. Probably accidentally became the core loop the game should lean into in Phase 5 polish.
+
+---
+
 ## 2026-05-02 — Day 12 / Phase 2 close (bookkeeping)
 
 > Not a code session. A deliberate checkpoint: Phase 2 ("Game Feel," Days 6–12) is closed before Phase 3 work begins. The brand rebrand (Apr 25–26) and the recording-session polish (May 1) were the de-facto closing beats — both real game-feel work even though neither was a planned dev day. This entry exists so Phase 3 starts from honest documentation, not stale `plan.md` §2 text claiming Day 5 / Phase 1.

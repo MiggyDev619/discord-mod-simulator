@@ -27,9 +27,9 @@
 
 ## 2. Where You Are Right Now
 
-**Day:** 12 (Phase 2 closed)
-**Phase:** 2 — Game Feel · CLOSED
-**Next phase:** 3 — Retention (Days 13–18)
+**Day:** 18 (Phase 3 closed)
+**Phase:** 3 — Retention · CLOSED
+**Next phase:** 4 — Monetization (Days 19–22)
 
 > See `DEVLOG-NOTES.md` for per-session details. This is the at-a-glance state.
 
@@ -52,13 +52,20 @@
 - **Day 11:** UI polish v1 — health bar (Frame with `Fill`/`Label`, color thresholds 60/30%), live wave count + "N left" via single `EnemyCountChanged` event, cooldown panel reading `<Tool>ReadyAt` attributes per-frame
 - **Day 12 close (Apr 25 → May 1):** `FlashOverlay` full-screen red/green flash on `gameOver`/`gameWon`; brand rebrand (`Theme.lua`, yellow/black HUD + Watermark); recording-session polish — `Effects` shockwave + `PointLight` on Ban/Kick/Mute/Timeout, `BanHammer` shake bumped to 0.30s / 0.75 magnitude, `HitFlash` cut 0.15s → 0.08s
 
-**Next up — Phase 3 (Days 13–18): Retention**
-- **Day 13–14:** upgrade tree expansion (beyond Faster Ban Hammer), persistent upgrades (first real DataStore work — design read/write model before building), per-tool upgrades
-- **Day 15:** random waves + modifiers ("Spam Storm", "Toxic Wave")
-- **Day 16–17:** XP / player levels / unlock new tools
-- **Day 18:** restart flow, retry button, full game-over screen
+**Done — Phase 3 (Days 13–18): Retention**
+- **Day 13:** `PersistenceManager` (DataStore) — coins + cooldown level. Schema-versioned (`v1`), Studio mock fallback for unpublished places. Place published mid-session.
+- **Day 14:** Upgrade tree expansion — `Config.COOLDOWN_UPGRADES` table drives 4 cooldown upgrades + UI. New `UpgradePanel` modal toggled by existing UpgradeButton. Schema v2 (per-tool levels). Tool client scripts standardized on `<Tool>Cooldown` attribute reads.
+- **Day 14.5 (combat depth detour):** Mute Gun reworked from slow → hitscan freeze gun (mouse raycast, gun-shaped model with Barrel/Sight, two-hit destroy with combo bonus). New `MuteFrozenUntil` attribute joins `FrozenUntil` in the heartbeat. `EnemySpawner.DestroyEnemy` BindableFunction is the shared destroy path (Splitter children + reward + effects in one place). `COMBO_MULTIPLIER = 2` doubles coin reward when destroying frozen enemies (via `CurrencyManager.RewardForKill`). Kick now awards `COIN_KICK_PER_HIT = 5` per cone-hit. Tool unlock system: Mute/Timeout/Kick moved to `ReplicatedStorage/Tools`, granted by new `ToolGranter` based on `<Tool>Unlocked` attributes. Schema v3 (unlocks, with v2→v3 grandfathering).
+- **Day 15:** Random wave modifiers — `Config.WAVE_MODIFIERS` table (Spam Storm, Toxic Wave, Splitter Surge), 30% chance from wave 3+. `WaveStarted` extended with optional modifier label.
+- **Day 16–17:** XP + player levels — `CurrencyManager.AddXp` from `RewardForKill` (XP = base reward, NOT combo'd), per-level requirement `level * 100`, cap 25. Schema v4. CurrencyLabel renders `Lv N · Coins: M`.
+- **Day 18:** Restart flow — `GameManager.Reset`, `EnemySpawner.ClearAll`, RoundManager re-runnable via `startRun()`, new `RetryRun` RemoteEvent, `GameOverPanel` modal with stats (waves survived, run coins, level) + Retry button. `RunCoinsEarned` per-run tracker (NOT persisted).
 
-**Milestone target:** addictive enough to replay between sessions.
+**Next up — Phase 4 (Days 19–22): Monetization**
+- **Day 19:** Gamepasses (Double Coins, Faster Cooldown, etc.). Real-money decisions — design pricing before coding.
+- **Day 20:** Dev Products (Instant Revive, Coin Boosts).
+- **Day 21–22:** Balance pass (catch any economy exploits, tune costs against actual play data).
+
+**Milestone target:** game can earn money. Publishing workflow already proven (Day 13).
 
 ---
 
@@ -268,16 +275,17 @@ Goal: **Ship it.**
 - [x] Difficulty scaling
 
 **Progression**
-- [x] Currency (coins via Player attributes, data-driven `Reward` per enemy)
-- [x] Shop (upgrade button — single item; catalog expands Day 13–14)
-- [x] Upgrades (Faster Ban Hammer L1–3; tree expansion is Phase 3)
-- [ ] XP / levels — Phase 3 (Day 16–17)
+- [x] Currency (coins via Player attributes, data-driven `Reward` per enemy; `RunCoinsEarned` per-run tracker for game-over screen)
+- [x] Shop (Upgrades panel — 4 cooldown upgrades + 3 tool unlocks via `Config.COOLDOWN_UPGRADES` + `Config.TOOL_UNLOCKS`)
+- [x] Upgrades (per-tool cooldown reductions Lv 1–3; persisted via DataStore schema v4)
+- [x] XP / levels (per-level `level * 100` XP from `RewardForKill`, cap 25; `Lv N · Coins: M` in HUD)
+- [x] Persistence (DataStore — coins, XP, level, all cooldown levels, all tool unlocks; schema migrations v1→v2→v3→v4)
 
 **UI**
 - [x] Health display (Frame + `Fill`/`Label` bar, 60/30% color thresholds)
-- [x] Round UI (`WaveLabel` — "Wave X / Y", "in Ns", VICTORY, Run ended)
-- [x] Currency UI (top-left coin counter + `+N` popups via `Effects.BanEffect`)
-- [ ] Game over screen — `FlashOverlay` covers run-end flash, but full screen + retry button is Day 18
+- [x] Round UI (`WaveLabel` — "Wave X / Y", "in Ns", VICTORY, Run ended; modifier label inline for chaos waves)
+- [x] Currency UI (top-left `Lv N · Coins: M` + `+N` popups via `Effects.BanEffect`)
+- [x] Game over screen (`GameOverPanel` — headline + waves survived + run coins + level + Retry button)
 
 **Polish**
 - [x] Hit effects (`HitFlash`, `BanEffect`/`MuteEffect`/`TimeoutEffect`/`KickEffect`/`SplitEffect`/`TeleportEffect`, shockwaves + lights)
