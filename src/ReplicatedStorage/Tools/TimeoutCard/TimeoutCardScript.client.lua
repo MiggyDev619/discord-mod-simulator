@@ -16,9 +16,10 @@ local lastCast = 0
 
 tool.Activated:Connect(function()
 	local now = tick()
-	if now - lastCast < Config.TIMEOUT_COOLDOWN then return end
+	local cooldown = player:GetAttribute("TimeoutCooldown") or Config.TIMEOUT_COOLDOWN
+	if now - lastCast < cooldown then return end
 	lastCast = now
-	player:SetAttribute("TimeoutReadyAt", now + Config.TIMEOUT_COOLDOWN)
+	player:SetAttribute("TimeoutReadyAt", now + cooldown)
 
 	local character = player.Character
 	if not character then return end

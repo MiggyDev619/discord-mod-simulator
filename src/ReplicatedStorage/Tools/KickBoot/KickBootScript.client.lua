@@ -19,9 +19,10 @@ local lastKick = 0
 
 tool.Activated:Connect(function()
 	local now = tick()
-	if now - lastKick < Config.KICK_COOLDOWN then return end
+	local cooldown = player:GetAttribute("KickCooldown") or Config.KICK_COOLDOWN
+	if now - lastKick < cooldown then return end
 	lastKick = now
-	player:SetAttribute("KickReadyAt", now + Config.KICK_COOLDOWN)
+	player:SetAttribute("KickReadyAt", now + cooldown)
 
 	local character = player.Character
 	if not character then return end

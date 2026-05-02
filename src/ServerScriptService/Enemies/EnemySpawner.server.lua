@@ -22,7 +22,7 @@ local map        = workspace:WaitForChild("Map")
 local enemyStart = map:WaitForChild("EnemyStart")
 local serverZone = map:WaitForChild("ServerZone")
 
-local MUTE_COLOR = Color3.fromRGB(70, 150, 255)
+local MUTE_FREEZE_COLOR = Color3.fromRGB(70, 150, 255)  -- Mute Gun first-hit freeze (same blue as old mute)
 
 local activeEnemies      = {}
 local lastBroadcastCount = -1
@@ -161,6 +161,50 @@ setWaveRemainingFunc.OnInvoke = function(n)
 	end
 end
 
+-- Shared destroy path. Called by the BanEnemy handler below AND by MuteHandler
+-- when a Mute Gun second-hit destroys an already-frozen target. Keeps Splitter
+-- spawning + combo reward + effects in one place — no duplicate logic between
+-- destructive tools.
+local destroyEnemyFunc = Instance.new("BindableFunction")
+destroyEnemyFunc.Name     = "DestroyEnemy"
+destroyEnemyFunc.Parent   = script
+destroyEnemyFunc.OnInvoke = function(player, enemyPart)
+	if not enemyPart or not enemyPart.Parent or not enemyPart:GetAttribute("IsEnemy") then
+		return 0, false
+	end
+
+	local banPos        = enemyPart.Position
+	local reward, combo = CurrencyManager.RewardForKill(player, enemyPart)
+
+	-- Splitter hook: spawn children at the death position before flashing/destroying.
+	if enemyPart.Name == "Splitter" then
+		local parentData
+		for _, d in ipairs(activeEnemies) do
+			if d.part == enemyPart then
+				parentData = d
+				break
+			end
+		end
+		local parentSpeed = parentData and parentData.speed or Config.SPLITTER_SPEED
+		local childSpeed  = parentSpeed * Config.SPLITTER_CHILD_SPEED_RATIO
+		local childSize   = enemyPart.Size * Config.SPLITTER_CHILD_SIZE_RATIO
+		for j = 1, Config.SPLITTER_CHILD_COUNT do
+			local angle  = (j - 1) * (2 * math.pi / Config.SPLITTER_CHILD_COUNT)
+			local offset = Vector3.new(
+				math.cos(angle) * Config.SPLITTER_CHILD_OFFSET,
+				0,
+				math.sin(angle) * Config.SPLITTER_CHILD_OFFSET
+			)
+			spawnEnemy("SplitterChild", nil, banPos + offset, childSize, childSpeed)
+		end
+		Effects.SplitEffect(banPos)
+	end
+
+	Effects.HitFlash(enemyPart)
+	Effects.BanEffect(banPos, reward)
+	return reward, combo
+end
+
 RunService.Heartbeat:Connect(function(dt)
 	if GameManager.IsGameOver() then return end
 
@@ -178,7 +222,7 @@ RunService.Heartbeat:Connect(function(dt)
 		end
 
 		-- Kick takes top priority: while KickedUntil > now, BodyVelocity is driven by
-		-- KickVelocity and every other per-frame system (mute/freeze/seek/damage) is skipped.
+		-- KickVelocity and every other per-frame system (freeze/seek/damage) is skipped.
 		-- When the kick window expires, attributes are cleared and normal movement resumes.
 		local kickedUntil = enemy:GetAttribute("KickedUntil")
 		if kickedUntil then
@@ -194,17 +238,19 @@ RunService.Heartbeat:Connect(function(dt)
 			end
 		end
 
-		-- Status effects: Timeout (freeze) overrides Mute (slow). Both timers can stack;
-		-- when the stronger one expires, color drops back to the weaker active effect,
-		-- and finally to OriginalColor once nothing is active.
-		local frozenUntil = enemy:GetAttribute("FrozenUntil")
-		local mutedUntil  = enemy:GetAttribute("MutedUntil")
+		-- Two freeze sources: Timeout Card sets FrozenUntil (yellow), Mute Gun first
+		-- hit sets MuteFrozenUntil (blue). Both drop effective speed to 0. Color is
+		-- updated only on expiry transitions (handlers set color on apply). When one
+		-- expires while the other is still active, color drops to the still-active
+		-- effect's color, not OriginalColor.
+		local frozenUntil     = enemy:GetAttribute("FrozenUntil")
+		local muteFrozenUntil = enemy:GetAttribute("MuteFrozenUntil")
 
 		if frozenUntil and now >= frozenUntil then
 			enemy:SetAttribute("FrozenUntil", nil)
 			frozenUntil = nil
-			if mutedUntil and now < mutedUntil then
-				enemy.Color = MUTE_COLOR
+			if muteFrozenUntil and now < muteFrozenUntil then
+				enemy.Color = MUTE_FREEZE_COLOR
 			else
 				local origColor = enemy:GetAttribute("OriginalColor")
 				if origColor then
@@ -214,10 +260,10 @@ RunService.Heartbeat:Connect(function(dt)
 			end
 		end
 
-		if mutedUntil and now >= mutedUntil then
-			enemy:SetAttribute("MutedUntil", nil)
-			mutedUntil = nil
-			if not enemy:GetAttribute("FrozenUntil") then
+		if muteFrozenUntil and now >= muteFrozenUntil then
+			enemy:SetAttribute("MuteFrozenUntil", nil)
+			muteFrozenUntil = nil
+			if not (frozenUntil and now < frozenUntil) then
 				local origColor = enemy:GetAttribute("OriginalColor")
 				if origColor then
 					enemy.Color = origColor
@@ -227,17 +273,14 @@ RunService.Heartbeat:Connect(function(dt)
 		end
 
 		local effectiveSpeed = data.speed
-		if frozenUntil then
+		if frozenUntil or muteFrozenUntil then
 			effectiveSpeed = 0
-		elseif mutedUntil then
-			effectiveSpeed = data.speed * Config.MUTE_SLOW_FACTOR
 		end
 
-		-- Teleporters warp toward the zone every TELEPORTER_INTERVAL. Frozen blocks
-		-- the warp (Timeout fully pauses the enemy); Mute does NOT — a muted user can
-		-- still ghost-ping. So Mute is intentionally weaker against this enemy type.
+		-- Teleporters warp toward the zone every TELEPORTER_INTERVAL. Either freeze
+		-- blocks the warp; without that, frozen Teleporters would still warp.
 		if data.typeName == "Teleporter" and data.nextTeleport and now >= data.nextTeleport then
-			if not frozenUntil then
+			if not frozenUntil and not muteFrozenUntil then
 				local toZone = zonePos - enemy.Position
 				if toZone.Magnitude > 0 then
 					local jump   = toZone.Unit * Config.TELEPORTER_DISTANCE
@@ -259,8 +302,8 @@ RunService.Heartbeat:Connect(function(dt)
 			data.velocity.Velocity = Vector3.new(0, 0, 0)
 
 			-- Frozen enemies stall at the zone instead of ticking damage —
-			-- Timeout should fully pause them, not just stop their walk.
-			if not frozenUntil then
+			-- either freeze should fully pause them, not just stop their walk.
+			if not frozenUntil and not muteFrozenUntil then
 				data.damageCooldown -= dt
 				if data.damageCooldown <= 0 then
 					data.damageCooldown = Config.ENEMY_DAMAGE_INTERVAL
@@ -310,39 +353,9 @@ banEnemy.OnServerEvent:Connect(function(player, enemyPart)
 	end
 	lastBanTime[player] = now
 
-	local reward  = enemyPart:GetAttribute("Reward") or Config.COIN_TROLL
-	local banPos  = enemyPart.Position
-	CurrencyManager.AddCoins(player, reward)
-
-	-- Splitter hook: before the parent is flashed/destroyed, spawn its children
-	-- at the ban position with sizes/speeds derived from the parent. Children are
-	-- SplitterChild type, which RoundManager never rolls — they never recurse.
-	if enemyPart.Name == "Splitter" then
-		local parentData
-		for _, d in ipairs(activeEnemies) do
-			if d.part == enemyPart then
-				parentData = d
-				break
-			end
-		end
-		local parentSpeed = parentData and parentData.speed or Config.SPLITTER_SPEED
-		local childSpeed  = parentSpeed * Config.SPLITTER_CHILD_SPEED_RATIO
-		local childSize   = enemyPart.Size * Config.SPLITTER_CHILD_SIZE_RATIO
-		for j = 1, Config.SPLITTER_CHILD_COUNT do
-			local angle  = (j - 1) * (2 * math.pi / Config.SPLITTER_CHILD_COUNT)
-			local offset = Vector3.new(
-				math.cos(angle) * Config.SPLITTER_CHILD_OFFSET,
-				0,
-				math.sin(angle) * Config.SPLITTER_CHILD_OFFSET
-			)
-			spawnEnemy("SplitterChild", nil, banPos + offset, childSize, childSpeed)
-		end
-		Effects.SplitEffect(banPos)
-	end
-
-	print(string.format("[EnemySpawner] %s banned %s (+%d coins)", player.Name, enemyPart.Name, reward))
-	Effects.HitFlash(enemyPart)
-	Effects.BanEffect(banPos, reward)
+	local reward, combo = destroyEnemyFunc:Invoke(player, enemyPart)
+	print(string.format("[EnemySpawner] %s banned %s (+%d coins%s)",
+		player.Name, enemyPart.Name, reward, combo and " — COMBO!" or ""))
 end)
 
 Players.PlayerRemoving:Connect(function(player)

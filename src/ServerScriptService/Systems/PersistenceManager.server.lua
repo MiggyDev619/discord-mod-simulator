@@ -18,7 +18,7 @@ local Shared          = ReplicatedStorage:WaitForChild("Shared")
 local Config          = require(Shared:WaitForChild("Config"))
 local CurrencyManager = require(script.Parent:WaitForChild("CurrencyManager"))
 
-local SCHEMA_VERSION       = 1
+local SCHEMA_VERSION       = 3
 local STORE_NAME           = "DMS_PlayerData_v1" .. (RunService:IsStudio() and "_dev" or "")
 local LOAD_RETRY_ATTEMPTS  = 3
 local LOAD_RETRY_BACKOFFS  = { 1, 2 } -- waits between attempt 1→2 and 2→3; 3rd attempt has no wait after
@@ -48,12 +48,42 @@ local function keyFor(player)
 	return "Player_" .. tostring(player.UserId)
 end
 
+local function unlockedAttr(toolKey)
+	return toolKey .. "Unlocked"
+end
+
 local function snapshot(player)
-	return {
-		version       = SCHEMA_VERSION,
-		coins         = player:GetAttribute("Coins") or 0,
-		cooldownLevel = player:GetAttribute("CooldownLevel") or 0,
+	local data = {
+		version = SCHEMA_VERSION,
+		coins   = player:GetAttribute("Coins") or 0,
 	}
+	for _, upg in ipairs(Config.COOLDOWN_UPGRADES) do
+		data[upg.levelAttr] = player:GetAttribute(upg.levelAttr) or 0
+	end
+	for _, ul in ipairs(Config.TOOL_UNLOCKS) do
+		local attr = unlockedAttr(ul.key)
+		data[attr] = player:GetAttribute(attr) == true
+	end
+	return data
+end
+
+-- v1 → v2: v1 saved one upgrade as `cooldownLevel` (Ban only). v2 splits per-tool;
+-- the old value migrates to BanCooldownLevel, others default to 0.
+-- v2 → v3: tool unlocks added. Grandfather any pre-v3 player with all tools
+-- unlocked (they've been playtesting; not making them re-grind).
+local function migrate(data)
+	if data.version == 1 then
+		data.BanCooldownLevel = data.cooldownLevel or 0
+		data.cooldownLevel    = nil
+		data.version          = 2
+	end
+	if data.version == 2 then
+		for _, ul in ipairs(Config.TOOL_UNLOCKS) do
+			data[unlockedAttr(ul.key)] = true
+		end
+		data.version = 3
+	end
+	return data
 end
 
 local function getWithRetry(player)
@@ -89,17 +119,25 @@ local function loadPlayer(player)
 		return
 	end
 
-	if type(data) == "table" and data.version == SCHEMA_VERSION then
-		CurrencyManager.LoadFromSave(player, data)
-	elseif data ~= nil then
-		warn("[PersistenceManager] Unrecognized save shape for", player.Name, "(version", data and data.version, ") — keeping defaults")
+	if type(data) == "table" then
+		data = migrate(data)
+		if data.version == SCHEMA_VERSION then
+			CurrencyManager.LoadFromSave(player, data)
+		else
+			warn("[PersistenceManager] Unrecognized save shape for", player.Name, "(version", data.version, ") — keeping defaults")
+		end
 	end
 	-- nil data = brand new player, defaults from CurrencyManager.initPlayer remain.
 
 	loaded[player] = true
 
 	player:GetAttributeChangedSignal("Coins"):Connect(function() dirty[player] = true end)
-	player:GetAttributeChangedSignal("CooldownLevel"):Connect(function() dirty[player] = true end)
+	for _, upg in ipairs(Config.COOLDOWN_UPGRADES) do
+		player:GetAttributeChangedSignal(upg.levelAttr):Connect(function() dirty[player] = true end)
+	end
+	for _, ul in ipairs(Config.TOOL_UNLOCKS) do
+		player:GetAttributeChangedSignal(unlockedAttr(ul.key)):Connect(function() dirty[player] = true end)
+	end
 end
 
 Players.PlayerAdded:Connect(loadPlayer)

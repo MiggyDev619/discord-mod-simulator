@@ -396,6 +396,66 @@ function Effects.SplitEffect(position)
 	Debris:AddItem(anchor, EFFECT_LIFETIME)
 end
 
+-- Hitscan tracer for the Mute Gun. Cyan/electric line stretched between gun
+-- muzzle and hit point, plus a brief muzzle flash + light at the origin.
+-- Fires every shot (hit or miss) so the gun feels alive even on whiffs.
+function Effects.MuteTracer(fromPos, toPos)
+	local diff     = toPos - fromPos
+	local distance = diff.Magnitude
+	if distance < 0.1 then return end
+
+	local tracerColor = Color3.fromRGB(120, 200, 255)
+
+	local tracer = Instance.new("Part")
+	tracer.Anchored      = true
+	tracer.CanCollide    = false
+	tracer.CanQuery      = false
+	tracer.CanTouch      = false
+	tracer.CastShadow    = false
+	tracer.Material      = Enum.Material.Neon
+	tracer.Color         = tracerColor
+	tracer.Size          = Vector3.new(0.15, 0.15, distance)
+	tracer.CFrame        = CFrame.lookAt(fromPos, toPos) * CFrame.new(0, 0, -distance / 2)
+	tracer.Transparency  = 0.1
+	tracer.Parent        = workspace
+
+	TweenService:Create(tracer, TweenInfo.new(0.18, Enum.EasingStyle.Linear), {
+		Transparency = 1,
+		Size         = Vector3.new(0.04, 0.04, distance),
+	}):Play()
+	Debris:AddItem(tracer, 0.3)
+
+	-- Muzzle flash at gun tip — short particle burst + bright light.
+	local flash = createAnchor(fromPos)
+
+	local flashLight = Instance.new("PointLight")
+	flashLight.Color      = tracerColor
+	flashLight.Brightness = 8
+	flashLight.Range      = 6
+	flashLight.Parent     = flash
+
+	local flashEmitter = Instance.new("ParticleEmitter")
+	flashEmitter.Texture       = "rbxasset://textures/particles/sparkles_main.dds"
+	flashEmitter.Color         = ColorSequence.new(Color3.fromRGB(180, 220, 255))
+	flashEmitter.Size          = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0.8),
+		NumberSequenceKeypoint.new(1, 0),
+	})
+	flashEmitter.Transparency  = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0),
+		NumberSequenceKeypoint.new(1, 1),
+	})
+	flashEmitter.Lifetime      = NumberRange.new(0.1, 0.2)
+	flashEmitter.Speed         = NumberRange.new(4, 8)
+	flashEmitter.SpreadAngle   = Vector2.new(60, 60)
+	flashEmitter.Rate          = 0
+	flashEmitter.LightEmission = 0.9
+	flashEmitter.Parent        = flash
+	flashEmitter:Emit(8)
+
+	Debris:AddItem(flash, 0.4)
+end
+
 -- Flashes an enemy part white/neon, freezes it in place, and schedules its destruction.
 -- Clears IsEnemy so other systems stop seeing it as targetable mid-flash.
 function Effects.HitFlash(part)

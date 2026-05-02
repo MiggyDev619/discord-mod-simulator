@@ -28,6 +28,7 @@ local healthText    = healthBar:WaitForChild("Label")
 local currencyLabel = mainUI:WaitForChild("CurrencyLabel")
 local waveLabel     = mainUI:WaitForChild("WaveLabel")
 local upgradeButton = mainUI:WaitForChild("UpgradeButton")
+local upgradePanel  = mainUI:WaitForChild("UpgradePanel")
 local cooldownPanel = mainUI:WaitForChild("CooldownPanel")
 local flashOverlay  = mainUI:WaitForChild("FlashOverlay")
 
@@ -191,30 +192,135 @@ local function updateCurrency()
 	lastCoins = coins
 end
 
-local function updateUpgradeButton()
-	local level = player:GetAttribute("CooldownLevel") or 0
-	if level >= Config.UPGRADE_COOLDOWN_MAX_LEVEL then
-		upgradeButton.Text        = "Ban Hammer: MAXED"
-		upgradeButton.AutoButtonColor = false
-	else
-		local cost = Config.UPGRADE_COOLDOWN_COST * (level + 1)
-		upgradeButton.Text = string.format("Faster Ban Hammer  Lv %d → %d  (%d coins)", level, level + 1, cost)
-		upgradeButton.AutoButtonColor = true
-	end
-end
-
-upgradeButton.MouseButton1Click:Connect(function()
-	purchaseUpgrade:FireServer("Cooldown")
-end)
-
 player:GetAttributeChangedSignal("Coins"):Connect(updateCurrency)
-player:GetAttributeChangedSignal("CooldownLevel"):Connect(updateUpgradeButton)
 
 -- Seed lastCoins to the current value so the initial render doesn't spawn a
 -- "+N" floater for whatever amount the player loaded in with.
 lastCoins = player:GetAttribute("Coins") or 0
 updateCurrency()
-updateUpgradeButton()
+
+-- Upgrade panel: dynamic rows from Config. Two row types:
+--  1. Unlock rows (TOOL_UNLOCKS) — one per locked tool, hides itself once owned.
+--  2. Cooldown rows (COOLDOWN_UPGRADES) — visible only when the underlying tool
+--     is unlocked (Ban Hammer is always visible; the others appear post-unlock).
+-- UpgradeButton at top-right toggles the panel visible/hidden.
+
+local function makeRow(layoutOrder, labelText, rowName)
+	local row = Instance.new("Frame")
+	row.Name                   = rowName
+	row.Size                   = UDim2.new(1, 0, 0, 44)
+	row.BackgroundTransparency = 1
+	row.LayoutOrder            = layoutOrder
+	row.ZIndex                 = 51
+
+	local label = Instance.new("TextLabel")
+	label.Size                   = UDim2.new(0.55, -4, 1, 0)
+	label.Position               = UDim2.new(0, 0, 0, 0)
+	label.BackgroundTransparency = 1
+	label.TextColor3             = Color3.fromRGB(250, 250, 250)
+	label.Font                   = Enum.Font.GothamBold
+	label.TextSize               = 16
+	label.TextXAlignment         = Enum.TextXAlignment.Left
+	label.TextYAlignment         = Enum.TextYAlignment.Center
+	label.TextWrapped            = false
+	label.Text                   = labelText
+	label.ZIndex                 = 52
+	label.Parent                 = row
+
+	local button = Instance.new("TextButton")
+	button.Name                   = "Buy"
+	button.Size                   = UDim2.new(0.45, 0, 1, 0)
+	button.Position               = UDim2.new(0.55, 4, 0, 0)
+	button.BackgroundColor3       = Color3.fromRGB(250, 204, 21)
+	button.BackgroundTransparency = 0
+	button.TextColor3             = Color3.fromRGB(9, 9, 11)
+	button.Font                   = Enum.Font.GothamBold
+	button.TextSize               = 16
+	button.AutoButtonColor        = true
+	button.BorderSizePixel        = 0
+	button.Text                   = "Buy"
+	button.ZIndex                 = 52
+	button.Parent                 = row
+	local buttonCorner = Instance.new("UICorner")
+	buttonCorner.CornerRadius = UDim.new(0, 6)
+	buttonCorner.Parent       = button
+
+	return row, button
+end
+
+local function unlockedAttr(toolKey) return toolKey .. "Unlocked" end
+
+-- Unlock rows (LayoutOrder 1..N — show first in panel)
+local unlockRows = {}  -- [toolKey] = { ul = ul, row = row, button = button }
+for i, ul in ipairs(Config.TOOL_UNLOCKS) do
+	local row, button = makeRow(i, ul.label, ul.key .. "UnlockRow")
+	row.Parent             = upgradePanel
+	unlockRows[ul.key]     = { ul = ul, row = row, button = button }
+
+	button.Text = string.format("Buy (%d)", ul.cost)
+
+	button.MouseButton1Click:Connect(function()
+		purchaseUpgrade:FireServer(ul.key)
+	end)
+
+	local function refresh()
+		row.Visible = not (player:GetAttribute(unlockedAttr(ul.key)) == true)
+	end
+	refresh()
+	player:GetAttributeChangedSignal(unlockedAttr(ul.key)):Connect(refresh)
+end
+
+-- Cooldown rows (LayoutOrder 100+ — show after unlocks)
+local upgradeRows = {}  -- [key] = { upg = upg, row = row, button = button }
+
+local function refreshCooldownRow(key)
+	local entry = upgradeRows[key]
+	if not entry then return end
+	local upg    = entry.upg
+	local button = entry.button
+	local level  = player:GetAttribute(upg.levelAttr) or 0
+	if level >= upg.maxLevel then
+		button.Text             = "MAXED"
+		button.AutoButtonColor  = false
+		button.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+		button.TextColor3       = Color3.fromRGB(250, 250, 250)
+	else
+		local cost = upg.baseCost * (level + 1)
+		button.Text             = string.format("Lv %d → %d (%d)", level, level + 1, cost)
+		button.AutoButtonColor  = true
+		button.BackgroundColor3 = Color3.fromRGB(250, 204, 21)
+		button.TextColor3       = Color3.fromRGB(9, 9, 11)
+	end
+end
+
+for i, upg in ipairs(Config.COOLDOWN_UPGRADES) do
+	local row, button = makeRow(100 + i, upg.label, upg.key .. "Row")
+	row.Parent           = upgradePanel
+	upgradeRows[upg.key] = { upg = upg, row = row, button = button }
+
+	button.MouseButton1Click:Connect(function()
+		purchaseUpgrade:FireServer(upg.key)
+	end)
+
+	refreshCooldownRow(upg.key)
+	player:GetAttributeChangedSignal(upg.levelAttr):Connect(function()
+		refreshCooldownRow(upg.key)
+	end)
+
+	-- Cooldown rows for unlock-gated tools stay hidden until the tool is owned.
+	-- Ban has no unlockKey (always available).
+	if upg.unlockKey then
+		local function refreshVisible()
+			row.Visible = player:GetAttribute(unlockedAttr(upg.unlockKey)) == true
+		end
+		refreshVisible()
+		player:GetAttributeChangedSignal(unlockedAttr(upg.unlockKey)):Connect(refreshVisible)
+	end
+end
+
+upgradeButton.MouseButton1Click:Connect(function()
+	upgradePanel.Visible = not upgradePanel.Visible
+end)
 
 -- Cooldown panel: each tool LocalScript writes a `<Tool>ReadyAt` attribute on
 -- the LocalPlayer when activated. Per frame we compute remaining seconds, dim
@@ -223,14 +329,24 @@ updateUpgradeButton()
 local COOLDOWN_DIM_TRANSPARENCY = 0.55  -- on cooldown
 local COOLDOWN_LIT_TRANSPARENCY = 0     -- ready
 
+-- Cooldown slots tied to tool unlocks where applicable. Ban is always shown;
+-- Mute/Timeout/Kick slots stay hidden until the corresponding tool is unlocked
+-- (so a fresh player only sees the Ban slot at the bottom).
 local cooldownSlots = {
 	{ name = "Ban",     attr = "BanReadyAt",     slot = cooldownPanel:WaitForChild("Ban") },
-	{ name = "Mute",    attr = "MuteReadyAt",    slot = cooldownPanel:WaitForChild("Mute") },
-	{ name = "Timeout", attr = "TimeoutReadyAt", slot = cooldownPanel:WaitForChild("Timeout") },
-	{ name = "Kick",    attr = "KickReadyAt",    slot = cooldownPanel:WaitForChild("Kick") },
+	{ name = "Mute",    attr = "MuteReadyAt",    slot = cooldownPanel:WaitForChild("Mute"),    unlockKey = "MuteGun" },
+	{ name = "Timeout", attr = "TimeoutReadyAt", slot = cooldownPanel:WaitForChild("Timeout"), unlockKey = "TimeoutCard" },
+	{ name = "Kick",    attr = "KickReadyAt",    slot = cooldownPanel:WaitForChild("Kick"),    unlockKey = "KickBoot" },
 }
 for _, s in ipairs(cooldownSlots) do
 	s.timer = s.slot:WaitForChild("Timer")
+	if s.unlockKey then
+		local function refreshSlotVisible()
+			s.slot.Visible = player:GetAttribute(s.unlockKey .. "Unlocked") == true
+		end
+		refreshSlotVisible()
+		player:GetAttributeChangedSignal(s.unlockKey .. "Unlocked"):Connect(refreshSlotVisible)
+	end
 end
 
 RunService.Heartbeat:Connect(function()

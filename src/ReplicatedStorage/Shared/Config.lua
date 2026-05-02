@@ -42,11 +42,13 @@ Config.BAN_DAMAGE            = 999
 Config.BAN_RANGE             = 15
 Config.BAN_COOLDOWN          = 0.5
 
--- Mute Gun (slows enemies; non-destructive utility)
-Config.MUTE_RANGE            = 20    -- longer than BAN_RANGE (ranged)
-Config.MUTE_COOLDOWN         = 1.5   -- slower than ban; utility tool
-Config.MUTE_SLOW_FACTOR      = 0.25  -- muted enemy moves at 25% of its normal speed
-Config.MUTE_DURATION         = 5.0   -- seconds the slow lasts
+-- Mute Gun (hitscan freeze gun — first hit freezes, second hit destroys)
+-- Reworked from a slow-utility into a gun: distinguishes from Timeout Card by
+-- requiring two hits but rewarding coins on the kill. Combo'd with Timeout
+-- (already-frozen target) destroys in one shot.
+Config.MUTE_RANGE            = 50    -- gun-feel — much longer than ban/timeout
+Config.MUTE_COOLDOWN         = 1.5   -- slower than ban; takes 2 shots to kill
+Config.MUTE_FREEZE_DURATION  = 3.0   -- first-hit freeze window before it wears off
 Config.MUTE_SOUND_ID         = "rbxassetid://115994842117368"
 Config.MUTE_SOUND_VOLUME     = 0.7
 
@@ -83,12 +85,76 @@ Config.COIN_SPAMMER          = 20
 Config.COIN_TELEPORTER       = 25   -- harder to catch — pays a bit more than spammer
 Config.COIN_SPLITTER         = 30   -- dangerous if left alive — biggest non-child reward
 Config.COIN_SPLITTER_CHILD   = 5    -- low — keeps splitter from being a coin farm
+Config.COIN_KICK_PER_HIT     = 5    -- per enemy in the kick cone; small so it doesn't replace banning
 
--- Upgrades
-Config.UPGRADE_COOLDOWN_COST        = 50   -- base cost; scales linearly per level (lvl 1 = 50, lvl 2 = 100, lvl 3 = 150)
-Config.UPGRADE_COOLDOWN_REDUCTION   = 0.1  -- seconds shaved off BAN_COOLDOWN per level
-Config.UPGRADE_COOLDOWN_MIN         = 0.1  -- floor — cooldown will never drop below this
-Config.UPGRADE_COOLDOWN_MAX_LEVEL   = 3
+-- Combo bonus: destroying an enemy with FrozenUntil OR MuteFrozenUntil active
+-- multiplies the kill reward. Encourages setup plays (timeout → ban,
+-- mute-shot → mute-shot, timeout → kick).
+Config.COMBO_MULTIPLIER      = 2
+
+-- Tool unlocks: Mute Gun, Timeout Card, Kick Boot are locked at start. Players
+-- buy them from the upgrade panel. Ban Hammer is always granted via StarterPack.
+-- toolName matches the folder name in ReplicatedStorage/Tools/.
+Config.TOOL_UNLOCKS = {
+	{ key = "MuteGun",     toolName = "MuteGun",     label = "Unlock Mute Gun",     cost = 100 },
+	{ key = "KickBoot",    toolName = "KickBoot",    label = "Unlock Kick Boot",    cost = 150 },
+	{ key = "TimeoutCard", toolName = "TimeoutCard", label = "Unlock Timeout Card", cost = 200 },
+}
+
+-- Upgrades (per-tool cooldown reductions). Each tool's LocalScript reads its
+-- `<Tool>Cooldown` Player attribute (set by CurrencyManager to base − reduction*level).
+-- Cost scales linearly: cost = baseCost * (level + 1).
+-- One table drives server purchase logic AND client upgrade-panel UI rows — adding
+-- a new upgrade is one entry here, no other code change.
+Config.COOLDOWN_UPGRADES = {
+	{
+		key       = "Ban",
+		label     = "Faster Ban Hammer",
+		baseAttr  = "BanCooldown",
+		levelAttr = "BanCooldownLevel",
+		base      = Config.BAN_COOLDOWN,
+		reduction = 0.1,
+		minValue  = 0.1,
+		maxLevel  = 3,
+		baseCost  = 50,
+	},
+	{
+		key       = "Mute",
+		unlockKey = "MuteGun",  -- cooldown upgrade row stays hidden until tool unlocked
+		label     = "Faster Mute Gun",
+		baseAttr  = "MuteCooldown",
+		levelAttr = "MuteCooldownLevel",
+		base      = Config.MUTE_COOLDOWN,
+		reduction = 0.25,
+		minValue  = 0.5,
+		maxLevel  = 3,
+		baseCost  = 75,
+	},
+	{
+		key       = "Timeout",
+		unlockKey = "TimeoutCard",
+		label     = "Faster Timeout Card",
+		baseAttr  = "TimeoutCooldown",
+		levelAttr = "TimeoutCooldownLevel",
+		base      = Config.TIMEOUT_COOLDOWN,
+		reduction = 0.4,
+		minValue  = 1.0,
+		maxLevel  = 3,
+		baseCost  = 100,
+	},
+	{
+		key       = "Kick",
+		unlockKey = "KickBoot",
+		label     = "Faster Kick Boot",
+		baseAttr  = "KickCooldown",
+		levelAttr = "KickCooldownLevel",
+		base      = Config.KICK_COOLDOWN,
+		reduction = 0.2,
+		minValue  = 0.3,
+		maxLevel  = 3,
+		baseCost  = 50,
+	},
+}
 
 -- Persistence (DataStore)
 Config.PERSISTENCE_AUTOSAVE_INTERVAL = 60  -- seconds between dirty-player autosaves; PlayerRemoving + BindToClose also save
