@@ -42,6 +42,8 @@ end
 
 local function initPlayer(player)
 	player:SetAttribute("Coins", 0)
+	player:SetAttribute("Xp",    0)
+	player:SetAttribute("Level", 1)
 	for _, upg in ipairs(Config.COOLDOWN_UPGRADES) do
 		player:SetAttribute(upg.levelAttr, 0)
 		player:SetAttribute(upg.baseAttr,  upg.base)
@@ -57,10 +59,33 @@ function CurrencyManager.AddCoins(player, amount)
 	player:SetAttribute("Coins", coins)
 end
 
--- Reward a player for destroying an enemy. Applies the combo multiplier when the
--- enemy was frozen (Timeout's FrozenUntil OR Mute Gun's MuteFrozenUntil active
--- at destroy time). Returns the amount actually awarded for callers that want
--- to show it in popups.
+-- Per-level XP — when xp >= level * XP_PER_LEVEL_BASE, level up and carry over
+-- the overflow. Loops in case a single award covers multiple levels.
+function CurrencyManager.AddXp(player, amount)
+	if not player or not player.Parent or amount <= 0 then return end
+	local xp     = (player:GetAttribute("Xp")    or 0) + amount
+	local level  = player:GetAttribute("Level") or 1
+	local needed = level * Config.XP_PER_LEVEL_BASE
+
+	while xp >= needed and level < Config.XP_MAX_LEVEL do
+		xp     = xp - needed
+		level  = level + 1
+		needed = level * Config.XP_PER_LEVEL_BASE
+		print("[CurrencyManager]", player.Name, "leveled up to", level)
+	end
+
+	-- At max level, freeze XP at 0 so the bar stops filling visually.
+	if level >= Config.XP_MAX_LEVEL then xp = 0 end
+
+	player:SetAttribute("Xp",    xp)
+	player:SetAttribute("Level", level)
+end
+
+-- Reward a player for destroying an enemy. Applies the combo multiplier to the
+-- COIN reward when the enemy was frozen (Timeout's FrozenUntil OR Mute Gun's
+-- MuteFrozenUntil active at destroy time). XP is always the base amount —
+-- combos reward you in coins, not progression. Returns the coin amount and
+-- whether a combo applied (callers may want to show it in popups).
 function CurrencyManager.RewardForKill(player, enemyPart)
 	if not player or not enemyPart then return 0 end
 	local base = enemyPart:GetAttribute("Reward") or 0
@@ -73,6 +98,7 @@ function CurrencyManager.RewardForKill(player, enemyPart)
 
 	local total = combo and (base * Config.COMBO_MULTIPLIER) or base
 	CurrencyManager.AddCoins(player, total)
+	CurrencyManager.AddXp(player, base)
 	return total, combo == true
 end
 
@@ -124,6 +150,8 @@ end
 function CurrencyManager.LoadFromSave(player, data)
 	if not player or not player.Parent then return end
 	player:SetAttribute("Coins", tonumber(data.coins) or 0)
+	player:SetAttribute("Xp",    tonumber(data.xp)    or 0)
+	player:SetAttribute("Level", math.clamp(tonumber(data.level) or 1, 1, Config.XP_MAX_LEVEL))
 	for _, upg in ipairs(Config.COOLDOWN_UPGRADES) do
 		local level = math.clamp(tonumber(data[upg.levelAttr]) or 0, 0, upg.maxLevel)
 		player:SetAttribute(upg.levelAttr, level)

@@ -188,8 +188,9 @@ end
 
 local function updateCurrency()
 	local coins = player:GetAttribute("Coins") or 0
+	local level = player:GetAttribute("Level") or 1
 	local delta = coins - lastCoins
-	currencyLabel.Text = "Coins: " .. coins
+	currencyLabel.Text = string.format("Lv %d  ·  Coins: %d", level, coins)
 	if delta > 0 then
 		-- Brief color flash on the main label, plus a +N floater for the gain amount.
 		TweenService:Create(currencyLabel, CURRENCY_PULSE_INFO, {
@@ -200,7 +201,19 @@ local function updateCurrency()
 	lastCoins = coins
 end
 
+local function flashLevelUp()
+	-- Brief gold flash on the currency label whenever Level changes.
+	TweenService:Create(currencyLabel, CURRENCY_PULSE_INFO, {
+		TextColor3 = Theme.CurrencyFlash,
+	}):Play()
+end
+
 player:GetAttributeChangedSignal("Coins"):Connect(updateCurrency)
+player:GetAttributeChangedSignal("Level"):Connect(function()
+	updateCurrency()
+	flashLevelUp()
+	print("[ClientMain] Level up →", player:GetAttribute("Level"))
+end)
 
 -- Seed lastCoins to the current value so the initial render doesn't spawn a
 -- "+N" floater for whatever amount the player loaded in with.

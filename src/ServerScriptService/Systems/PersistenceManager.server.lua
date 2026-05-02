@@ -18,7 +18,7 @@ local Shared          = ReplicatedStorage:WaitForChild("Shared")
 local Config          = require(Shared:WaitForChild("Config"))
 local CurrencyManager = require(script.Parent:WaitForChild("CurrencyManager"))
 
-local SCHEMA_VERSION       = 3
+local SCHEMA_VERSION       = 4
 local STORE_NAME           = "DMS_PlayerData_v1" .. (RunService:IsStudio() and "_dev" or "")
 local LOAD_RETRY_ATTEMPTS  = 3
 local LOAD_RETRY_BACKOFFS  = { 1, 2 } -- waits between attempt 1→2 and 2→3; 3rd attempt has no wait after
@@ -56,6 +56,8 @@ local function snapshot(player)
 	local data = {
 		version = SCHEMA_VERSION,
 		coins   = player:GetAttribute("Coins") or 0,
+		xp      = player:GetAttribute("Xp")    or 0,
+		level   = player:GetAttribute("Level") or 1,
 	}
 	for _, upg in ipairs(Config.COOLDOWN_UPGRADES) do
 		data[upg.levelAttr] = player:GetAttribute(upg.levelAttr) or 0
@@ -71,6 +73,8 @@ end
 -- the old value migrates to BanCooldownLevel, others default to 0.
 -- v2 → v3: tool unlocks added. Grandfather any pre-v3 player with all tools
 -- unlocked (they've been playtesting; not making them re-grind).
+-- v3 → v4: XP / level added. Brand-new players: defaults to Lv 1 / 0 XP.
+-- Returning players: same — no way to back-compute level from coin history.
 local function migrate(data)
 	if data.version == 1 then
 		data.BanCooldownLevel = data.cooldownLevel or 0
@@ -82,6 +86,11 @@ local function migrate(data)
 			data[unlockedAttr(ul.key)] = true
 		end
 		data.version = 3
+	end
+	if data.version == 3 then
+		data.xp      = 0
+		data.level   = 1
+		data.version = 4
 	end
 	return data
 end
@@ -132,6 +141,8 @@ local function loadPlayer(player)
 	loaded[player] = true
 
 	player:GetAttributeChangedSignal("Coins"):Connect(function() dirty[player] = true end)
+	player:GetAttributeChangedSignal("Xp"):Connect(function()    dirty[player] = true end)
+	player:GetAttributeChangedSignal("Level"):Connect(function() dirty[player] = true end)
 	for _, upg in ipairs(Config.COOLDOWN_UPGRADES) do
 		player:GetAttributeChangedSignal(upg.levelAttr):Connect(function() dirty[player] = true end)
 	end

@@ -191,6 +191,13 @@ Config.COOLDOWN_UPGRADES = {
 -- Persistence (DataStore)
 Config.PERSISTENCE_AUTOSAVE_INTERVAL = 60  -- seconds between dirty-player autosaves; PlayerRemoving + BindToClose also save
 
+-- XP / player level. XP earned per kill = enemy's base coin Reward (combo
+-- bonus does NOT inflate XP — combos reward you in coins, not progression).
+-- Per-level requirement: level * XP_PER_LEVEL_BASE (lv 1→2 = 100, lv 2→3 = 200,
+-- etc.). XP carries over on level-up, no XP wasted.
+Config.XP_PER_LEVEL_BASE = 100
+Config.XP_MAX_LEVEL      = 25
+
 -- Effects
 -- Drop a Roblox sound asset ID here (e.g. "rbxassetid://9125657040"). Empty string = silent ban.
 -- In Studio: View → Toolbox → search "impact" / "whoosh" / "punch", right-click → Copy Asset ID.
