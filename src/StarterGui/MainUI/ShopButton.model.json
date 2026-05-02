@@ -9,21 +9,12 @@
     "BorderSizePixel": 0,
     "TextColor3": [0.0353, 0.0353, 0.0431],
     "Font": "GothamBold",
-    "TextScaled": true,
+    "TextSize": 18,
+    "TextScaled": false,
     "TextWrapped": false,
     "AutoButtonColor": true
   },
   "children": [
-    { "className": "UICorner", "properties": { "CornerRadius": {"UDim": [0, 8]} } },
-    {
-      "className": "UIPadding",
-      "properties": {
-        "PaddingLeft":   {"UDim": [0, 10]},
-        "PaddingRight":  {"UDim": [0, 10]},
-        "PaddingTop":    {"UDim": [0, 6]},
-        "PaddingBottom": {"UDim": [0, 6]}
-      }
-    },
-    { "className": "UITextSizeConstraint", "properties": { "MaxTextSize": 16 } }
+    { "className": "UICorner", "properties": { "CornerRadius": {"UDim": [0, 8]} } }
   ]
 }

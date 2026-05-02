@@ -92,6 +92,18 @@ local function showGameOverPanel(headlineText, headlineColor, wavesSurvived)
 	goCoinsStat.Text      = string.format("Coins This Run: %d", player:GetAttribute("RunCoinsEarned") or 0)
 	goLevelStat.Text      = string.format("Level: %d", player:GetAttribute("Level") or 1)
 	gameOverPanel.Visible = true
+	-- Defensive: ensure FlashOverlay isn't stuck opaque hiding the panel.
+	-- (Tween should always fade it back to 1 — this is belt-and-suspenders
+	-- against any race where the panel shows before the flash completes its
+	-- fade-out and somehow stays visible.)
+	task.delay(1.0, function()
+		if flashOverlay.BackgroundTransparency < 0.99 then
+			flashOverlay.BackgroundTransparency = 1
+			print("[ClientMain] Forced FlashOverlay clear after game-over panel show")
+		end
+	end)
+	print(string.format("[ClientMain] GameOverPanel shown (%s) — Visible=%s, RetryButton present=%s",
+		headlineText, tostring(gameOverPanel.Visible), tostring(retryButton ~= nil)))
 end
 
 local function hideGameOverPanel()
