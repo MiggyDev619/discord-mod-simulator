@@ -27,9 +27,9 @@
 
 ## 2. Where You Are Right Now
 
-**Day:** 22 (Phase 4 closed)
-**Phase:** 4 — Monetization · CLOSED
-**Next phase:** 5 — Polish + Viral (Days 23–27)
+**Day:** 27 (Phase 5 closed)
+**Phase:** 5 — Polish + Viral · CLOSED
+**Next phase:** 6 — Launch (Days 28–30)
 
 > See `DEVLOG-NOTES.md` for per-session details. This is the at-a-glance state.
 
@@ -65,12 +65,17 @@
 - **Day 20:** Dev Products — `Config.DEV_PRODUCTS` table with 4 consumables (Instant Revive 99, Coin Pack Small 49, Coin Pack Large 199, XP Boost 99). New `ProductHandler.server.lua` owns `MarketplaceService.ProcessReceipt` with per-key handlers + idempotent retry semantics. New `GameManager.Heal` for the Revive path. New `ShopButton` + `ShopPanel` UI (mutex-toggled with UpgradePanel — both anchored top-right at y=108). `XpBoostUntil` attribute drives `AddXp` 2× multiplier during boost window.
 - **Day 21–22:** Balance pass — tool unlock costs bumped 50% (MuteGun 100→150, KickBoot 150→225, TimeoutCard 200→300) so the Starter Pack gamepass is a meaningful time-saver. No other balance changes (playtest data not yet there).
 
-**Next up — Phase 5 (Days 23–27): Polish + Viral**
-- **Day 23–24:** Better map (themed boundary walls, server tower, moderator's desk — Studio-side, see `docs/MAP-LAYOUT.md`), lighting recipe (see `docs/USER-ACTIONS.md` §F), UI cleanup (custom hotbar, cooldown sweep, tooltips, settings menu, gamepass confirm modal), touch controls (tap-to-target + virtual KICK button + responsive HUD).
-- **Day 25:** Meme enemies (Karen, Furry, Discord Mod) + chat bubble system + "you got banned lol" popups.
-- **Day 26–27:** Multiplayer polish (leaderstats, server-side tracer replication for Mute Gun shots).
+**Done — Phase 5 (Days 23–27): Polish + Viral**
+- **Day 23–24:** Map polish via Studio command-bar script (`docs/MAP-LAYOUT.md` — auto-places 12 polish parts: yellow-Neon-stripped boundary walls, server tower with LED bands, moderator's desk + blurple monitor screen). Lighting recipe in `docs/USER-ACTIONS.md` §F. UI: cooldown sweep gradient + purchase confirmation toast + touch controls (UIScale 0.75 on touch devices + virtual KICK button bottom-right when KickBoot owned). Skipped: custom hotbar replacement (default Backpack works), tooltips (Tool.ToolTip already does it), in-game settings menu (Roblox Esc menu covers it).
+- **Day 25:** 3 meme enemies — Karen (slow tank, 25c), Furry (fragile speedster, 22c), Discord Mod (medium, 28c). Each has a `speechPool` table; `EnemySpawner.spawnEnemy` fires `Effects.SpeechBubble` with a random phrase on spawn. `Effects.spawnBanMemePopup` joins every BanEffect with a meme one-liner ("you got banned lol", "skill issue", "L + ratio", etc.). RoundManager.pickEnemyType refactored to a table-driven `ENEMY_PICK_TABLE` (6 enemy types now eligible).
+- **Day 26–27:** Multiplayer polish — `CurrencyManager.setupLeaderstats` creates Coins + Level IntValues mirrored from attributes (Roblox player list now shows both). `MuteShotFx` RemoteEvent bounces Mute Gun tracer effects from shooter → all clients so other players see your shots; ClientMain renders for non-local-players (skips own bounce to avoid double-render). Light anti-spoof: server validates muzzle position is within 8 studs of player's character.
 
-**Milestone target:** clippable, shareable, plays well with friends. After Phase 5: Phase 6 launch (Days 28–30).
+**Next up — Phase 6 (Days 28–30): Launch**
+- **Day 28:** Icon, thumbnail, description, tags. See `docs/USER-ACTIONS.md` §J for the launch checklist (gear-up Phase 6 doc lands then).
+- **Day 29:** Soft launch — share to friends/Discord, gather feedback, fix the inevitable bugs.
+- **Day 30:** Public release. TikTok / Reddit / Discord posts.
+
+**Milestone target:** shipped. Game is monetized, polished, and multiplayer-coop. The 30-day plan reaches its endpoint.
 
 ---
 
@@ -293,9 +298,12 @@ Goal: **Ship it.**
 - [x] Game over screen (`GameOverPanel` — headline + waves survived + run coins + level + Retry button)
 
 **Polish**
-- [x] Hit effects (`HitFlash`, `BanEffect`/`MuteEffect`/`TimeoutEffect`/`KickEffect`/`SplitEffect`/`TeleportEffect`, shockwaves + lights)
+- [x] Hit effects (`HitFlash`, `BanEffect`/`MuteEffect`/`TimeoutEffect`/`KickEffect`/`SplitEffect`/`TeleportEffect`/`MuteTracer`/`SpeechBubble`/ban meme popup, shockwaves + lights)
 - [x] Sounds (ban, mute, timeout, kick, split, teleport — all Config-driven asset IDs)
-- [x] Visual improvements (camera shake, swing anim, visible 3D hammer, hotbar icons, `FlashOverlay`, brand rebrand)
+- [x] Visual improvements (camera shake, swing anim, visible 3D hammer, hotbar icons, `FlashOverlay`, brand rebrand, cooldown sweep, purchase toast, map polish via `MAP-LAYOUT.md`)
+- [x] Meme enemies (Karen / Furry / Discord Mod with speech bubbles)
+- [x] Touch controls (UIScale on touch devices + virtual KICK button)
+- [x] Multiplayer polish (leaderstats Coins+Level, server-bounced Mute Gun tracers visible to all players)
 
 **Monetization**
 - [x] Gamepasses (Double Coins 199 R$, Faster Cooldowns 299 R$, Starter Pack 499 R$ — IDs are placeholders until user creates them on Creator Hub per `docs/USER-ACTIONS.md` §B)

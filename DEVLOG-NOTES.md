@@ -12,6 +12,68 @@ Raw build notes for the Discord Mod Simulator Roblox project, structured for a d
 
 ---
 
+## 2026-05-02 — Days 23–27 / Phase 5 close (Polish + Viral)
+
+> Same-day continuation after Phase 4 close. 5 commits across 5 planned dev days, plus one fix-forward commit (accidentally tracked the user's planning doc; untracked + gitignored). Phase 5 closes — game is now polished, multiplayer-aware, and has touch controls + meme enemies. Phase 6 launch unblocked.
+
+### What "Phase 5 closed" means against `plan.md` §7
+
+| Phase 5 scope (Days 23–27) | Status |
+|---|---|
+| Better map, lighting, UI cleanup (Days 23-24) | ✓ map via `docs/MAP-LAYOUT.md` Studio command-bar script (12 polish parts auto-placed). Lighting recipe in `USER-ACTIONS.md` §F. UI: cooldown sweep + purchase toast. ✗ skipped: custom hotbar (default works), settings menu (Esc menu covers it), tooltips (Tool.ToolTip already does it). |
+| Touch controls (Day 23-24 inline) | ✓ UIScale 0.75 on touch devices + virtual KICK button when KickBoot owned. Mouse.UnitRay handles tap-to-target on Mute Gun for free (Roblox maps touch to mouse). Tablet/Phone stay disabled in Game Settings until user real-device-tests per `USER-ACTIONS.md` §G. |
+| Meme enemies, chat bubbles, ban memes (Day 25) | ✓ Karen + Furry + Discord Mod with `speechPool` tables. `Effects.SpeechBubble` on spawn. `Effects.spawnBanMemePopup` on every BanEffect. RoundManager.pickEnemyType refactored to table-driven (6 types now eligible). |
+| Multiplayer polish (Day 26-27) | ✓ leaderstats Coins+Level (Roblox player list shows them). MuteShotFx RemoteEvent bounces tracers shooter→all clients (anti-spoof: muzzle within 8 studs of player). ✗ coop revive mechanic — defaulted skip per Phase 5 design Q25 (different player characters don't currently die). |
+
+### Decisions made (and why)
+
+- **Map polish via Studio command-bar script, not committed Workspace contents.** `Workspace` is intentionally OUT of the Rojo tree (per `state.md` §2 — empty-folder-wipe bug). Could have added Workspace back with actual contents committed, but that would have rewired the whole "Studio is the map source of truth" pattern. Instead: `docs/MAP-LAYOUT.md` ships an idempotent Lua script (cleans `MapPolish_` prefixed parts before recreating) that the user runs once in Studio command bar. Map is now reproducible from notes if the place file is ever lost — same correctness guarantee as version control, without the architectural change.
+- **Map script reads `EnemyStart` and `ServerZone` positions and computes everything relative.** No hardcoded coordinates. Walls flank the lane, server tower sits 8 studs behind the zone, desk sits 8 studs behind the spawn. `CFrame.lookAt` orients each part so its Z dimension runs along the lane, regardless of how the user has placed `EnemyStart`/`ServerZone` in their Workspace. Works on any map orientation.
+- **Skipped 3 of the Q14-15 UI polish items.** Custom hotbar replacement = big refactor for marginal brand-fidelity gain (CooldownPanel already shows tool timers; default Backpack is functional). In-game settings menu duplicates Roblox's Esc menu. Hover tooltips on hotbar items duplicate `Tool.ToolTip`. Each was a real cost-benefit call against autonomous-mode time budget; documented in the commit so future-me knows they were chosen-not-forgotten.
+- **Touch controls defaulted to UIScale + virtual button, not a full responsive layout pass.** UIScale 0.75 catches the 80% case (HUD shrinks proportionally, fits phone screens). Per-element responsive design (cooldown panel 4-wide → 2x2 on narrow screens) was on the table but adds complexity for a UX no one's tested yet. Real-device feedback (per `USER-ACTIONS.md` §G) will tell us if it's needed.
+- **Meme enemy speech via Effects.SpeechBubble fires on spawn, doesn't follow movement.** Anchored to the spawn position; lasts 3s; enemy is mostly still nearby. Could have parented BillboardGui directly to the enemy part (would follow movement) but: (a) BillboardGui parented to a Part stays attached even after Destroy, leaking, (b) most spawn-flavor reads happen in the first second, (c) one less attribute write per frame. Cheap > correct.
+- **Ban meme popup ALWAYS fires on BanEffect.** Could have gated by enemy type or made it rare. Going always-on for v1 — this is the viral-clip moneymaker and the user explicitly asked for it. Easy to gate later (`if math.random() < 0.5`) if it gets repetitive.
+- **`pickEnemyType` refactored to a table.** Was an if-cascade. Adding 3 meme enemies would have made it 6 deep. Table-driven is one entry per enemy with `minWave` + `chance`. Same "highest-tier-eligible enemy first" rule preserved (the table is sorted high-to-low). Future enemies are 1 entry, not 1 if-statement insertion at the right place in a cascade.
+- **Server-bounced Mute Gun tracers via dedicated RemoteEvent, not piggybacked on `MuteEnemy`.** Two reasons: (1) tracers fire on EVERY shot (hit OR miss) but `MuteEnemy` only fires on hit — sharing would conflate "shot occurred" with "valid target was hit", (2) `MuteEnemy` triggers gameplay logic (freeze/destroy), which we don't want re-triggered when bouncing visuals. Separate event = clean separation.
+- **Anti-spoof on muzzle position is "within 8 studs of player root."** Cosmetic-only data; no real exploit if a malicious client sends a wild position (worst case: tracer drawn somewhere weird). 8 studs is generous (covers normal arm-extension + character offset) but tight enough to filter obvious spoofs. Could be tightened later if it matters.
+- **Leaderstats Coins+Level mirror Player attributes via AttributeChangedSignal.** One-way sync (attribute → IntValue). Roblox player list reads IntValues; our HUD reads attributes; both stay consistent because attributes are the source. Did NOT plumb leaderstats through any RemoteEvent — the existing attribute replication carries the data; IntValues are local server-side mirrors that Roblox reads for the player list UI.
+- **Accidentally tracked the user's planning doc — fix-forward via `git rm --cached` + `.gitignore` entry, not amend.** Per CLAUDE.md "always create NEW commits rather than amending" rule. The `git add -A docs/` swept up the untracked file; gitignore prevents recurrence. Lesson: `git add -A` on a directory with untracked content is a footgun — better to `git add` specific files when working autonomously.
+
+### Phase 5 by the numbers
+
+- 6 commits: `bf9c5bb` (Day 23-24) → `23d7977` (gitignore fix) → `9d14aa8` (Day 25) → `ae75e1f` (Day 26-27) → this close. Plus `93c213c` (Phase 4 close) was the prior boundary.
+- New files: `docs/MAP-LAYOUT.md` (the Studio command-bar map script + spec). No new gameplay scripts shipped — all polish was edits to existing files.
+- New `Config` entries: 3 meme enemy stats blocks (`KAREN_*`, `FURRY_*`, `DISCORD_MOD_*` with speed/health/chance/coin), totaling 12 keys.
+- New player attributes: `KickBootUnlocked` already existed; no new persisted attributes this phase. `XpBoostUntil` was added in Phase 4 (still NOT persisted — mid-boost disconnect = lost boost; trade-off explained in Phase 4 close).
+- New RemoteEvents: `MuteShotFx`. Total now: 12 RemoteEvents.
+- Schema version: still v5. No schema bumps needed in Phase 5 (no new persisted state).
+- Test cycles: 0 in-Studio (autonomous run; all build-verified clean).
+
+### What's intentionally not built yet (Phase 6 unblocked, per `plan.md` §7)
+
+- **Real Creator Hub IDs for gamepasses + dev products.** Still placeholders — user must do `USER-ACTIONS.md` §B + §C before the Day 19-20 monetization actually transacts R$. Code is purchase-ready; data is not.
+- **Map polish parts in Workspace.** `MAP-LAYOUT.md` is the spec; user runs the command-bar script per `USER-ACTIONS.md` §E once and the polish appears.
+- **Tablet/Phone enabled in Game Settings → Devices.** Stays Computer-only until user real-device-tests touch UX per `USER-ACTIONS.md` §G.
+- **Lighting tuned in Studio.** Recipe is in `USER-ACTIONS.md` §F. User applies once per `Lighting` properties + `ColorCorrectionEffect` child.
+- **Coop revive mechanic.** Per Q25 default, skipped — character revives would require character respawn flow rework. If multiplayer is popular, post-launch.
+- **DataStore queue warning fix.** Still firing on disconnect (autosave + PlayerRemoving + BindToClose all save close together). Benign so far. Optimization: skip autosave-on-leave if PlayerRemoving will save anyway. Phase 6 polish if it ever drops a save.
+- **Pushing 26 commits to `origin/main`.** User's call per `USER-ACTIONS.md` §I.
+
+### Blockers for next session (Phase 6 launch)
+
+- **Phase 6 launch checklist needs human design decisions** (icon art, thumbnail composition, description voice, hashtag picks). Per the original Phase 4 design conversation pattern, autonomous defaults are risky on launch-day messaging. Pitch first, get sign-off, then ship.
+- **Working tree clean.** 26 commits ahead of `origin/main`, never pushed by intent.
+
+### Hooks for the post
+
+- **"How a 30-day Roblox build closed Phase 5 in one session."** Days 13-27 (Phases 3, 4, 5 — the entire midgame + endgame) shipped in one autonomous push. ~17 commits. Phase 1 (Days 1-5) took 5 days. Phase 2 (Days 6-12) took 7 days. Phase 5 closed today. The acceleration: one batch of "all defaults" answers up front so Claude isn't waiting on per-day questions.
+- **"Studio command-bar scripts as the version-control workaround for Workspace geometry."** Roblox's Workspace doesn't go in Rojo (per `state.md`). But the map STILL needs to be reproducible. Solution: a tiny Lua script committed to docs/ that, when pasted into Studio's command bar, generates the polish geometry deterministically. Reproducibility without architecture change.
+- **"Skipping polish items, on purpose."** Phase 5 dropped 3 of the planned UI items (custom hotbar, settings panel, tooltips). Each had a real cost-benefit call against the autonomous-mode time budget. Documented in the commit so future-me sees they were chosen-not-forgotten. Lesson: polish lists are wishlists, not contracts. Cut the ones that duplicate built-in behavior.
+- **"Tracers as a multiplayer test."** Day 26-27's tracer bounce was the first feature in 27 days that REQUIRED a multi-client test path to verify — every prior feature was solo-correct. Pattern to ship: client renders locally for instant feedback, fires server bounce, server validates + FireAllClients, all OTHER clients render. Dedicated event (not piggybacked on gameplay events) so visuals and logic don't conflate.
+- **"Meme phrases are 90% of the viral package for free."** Karen says "I WANT TO SPEAK TO THE OWNER" on spawn. "L + ratio" pops on every ban. Not a single new mechanic — just text. Players will clip these. The whole speech system was ~80 lines.
+
+---
+
 ## 2026-05-02 — Days 19–22 / Phase 4 close (Monetization)
 
 > Same-day continuation after the Phase 3 close. Built end-to-end gamepass + dev product systems against placeholder Roblox asset IDs (user creates the actual passes/products on Creator Hub per `docs/USER-ACTIONS.md`). 4 commits: Day 19 (gamepasses) → Day 20 (dev products + Shop UI) → Day 21-22 (balance) → this close.
