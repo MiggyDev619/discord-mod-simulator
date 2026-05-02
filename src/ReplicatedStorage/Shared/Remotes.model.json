@@ -48,6 +48,10 @@
     {
       "name": "RetryRun",
       "className": "RemoteEvent"
+    },
+    {
+      "name": "MuteShotFx",
+      "className": "RemoteEvent"
     }
   ]
 }

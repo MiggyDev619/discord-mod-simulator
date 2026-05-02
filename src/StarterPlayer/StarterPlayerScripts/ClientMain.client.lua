@@ -10,6 +10,7 @@ local RunService        = game:GetService("RunService")
 local Shared             = ReplicatedStorage:WaitForChild("Shared")
 local Config             = require(Shared:WaitForChild("Config"))
 local Theme              = require(Shared:WaitForChild("Theme"))
+local Effects            = require(Shared:WaitForChild("Effects"))
 local remotes            = Shared:WaitForChild("Remotes")
 local healthChanged      = remotes:WaitForChild("HealthChanged")
 local gameOver           = remotes:WaitForChild("GameOver")
@@ -19,6 +20,7 @@ local waveBreak          = remotes:WaitForChild("WaveBreak")
 local purchaseUpgrade    = remotes:WaitForChild("PurchaseUpgrade")
 local enemyCountChanged  = remotes:WaitForChild("EnemyCountChanged")
 local retryRun           = remotes:WaitForChild("RetryRun")
+local muteShotFx         = remotes:WaitForChild("MuteShotFx")
 
 local player        = Players.LocalPlayer
 local playerGui     = player:WaitForChild("PlayerGui")
@@ -120,6 +122,14 @@ gameWon.OnClientEvent:Connect(function()
 	playFlash(Theme.GreenWin)
 	showGameOverPanel("VICTORY", Theme.GreenWin, waveState.wave)
 	print("[ClientMain] Victory received")
+end)
+
+-- Multiplayer: render Mute Gun tracers fired by OTHER players. The shooter's
+-- own client already drew the tracer locally; we skip our own bounce so we
+-- don't double-render.
+muteShotFx.OnClientEvent:Connect(function(shooter, muzzle, endPoint)
+	if shooter == player then return end
+	Effects.MuteTracer(muzzle, endPoint)
 end)
 
 -- Retry button: clear local run-end state immediately so subsequent server

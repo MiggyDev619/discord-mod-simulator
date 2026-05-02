@@ -7,11 +7,12 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players           = game:GetService("Players")
 local Workspace         = game:GetService("Workspace")
 
-local Shared    = ReplicatedStorage:WaitForChild("Shared")
-local Config    = require(Shared:WaitForChild("Config"))
-local Effects   = require(Shared:WaitForChild("Effects"))
-local remotes   = Shared:WaitForChild("Remotes")
-local muteEnemy = remotes:WaitForChild("MuteEnemy")
+local Shared      = ReplicatedStorage:WaitForChild("Shared")
+local Config      = require(Shared:WaitForChild("Config"))
+local Effects     = require(Shared:WaitForChild("Effects"))
+local remotes     = Shared:WaitForChild("Remotes")
+local muteEnemy   = remotes:WaitForChild("MuteEnemy")
+local muteShotFx  = remotes:WaitForChild("MuteShotFx")
 
 local tool     = script.Parent
 local player   = Players.LocalPlayer
@@ -71,6 +72,11 @@ tool.Activated:Connect(function()
 
 	-- Always spawn the tracer — hit or miss — so the gun feels alive on every click.
 	Effects.MuteTracer(muzzle, endPoint)
+
+	-- Replicate the shot to other players via the server bounce. Local tracer
+	-- already rendered above; the bounce fires the same effect on every other
+	-- client (multiplayer visibility into who's shooting).
+	muteShotFx:FireServer(muzzle, endPoint)
 
 	if target then
 		print("[MuteGun] Hit:", target.Name, "dist:", math.floor((target.Position - root.Position).Magnitude))

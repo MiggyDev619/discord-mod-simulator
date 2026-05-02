@@ -210,10 +210,42 @@ function CurrencyManager.RecomputeAllCooldowns(player)
 	end
 end
 
-for _, p in ipairs(Players:GetPlayers()) do
-	initPlayer(p)
+-- Roblox player list shows leaderstats automatically. Coins + Level go in;
+-- both are mirrors of the Player attributes (which already replicate). This
+-- gives multiplayer visibility into "who's leveled up the most" without any
+-- new RemoteEvents.
+local function setupLeaderstats(player)
+	local stats = Instance.new("Folder")
+	stats.Name   = "leaderstats"
+	stats.Parent = player
+
+	local coins = Instance.new("IntValue")
+	coins.Name  = "Coins"
+	coins.Value = player:GetAttribute("Coins") or 0
+	coins.Parent = stats
+
+	local level = Instance.new("IntValue")
+	level.Name  = "Level"
+	level.Value = player:GetAttribute("Level") or 1
+	level.Parent = stats
+
+	player:GetAttributeChangedSignal("Coins"):Connect(function()
+		coins.Value = player:GetAttribute("Coins") or 0
+	end)
+	player:GetAttributeChangedSignal("Level"):Connect(function()
+		level.Value = player:GetAttribute("Level") or 1
+	end)
 end
-Players.PlayerAdded:Connect(initPlayer)
+
+local function setupPlayer(player)
+	initPlayer(player)
+	setupLeaderstats(player)
+end
+
+for _, p in ipairs(Players:GetPlayers()) do
+	setupPlayer(p)
+end
+Players.PlayerAdded:Connect(setupPlayer)
 
 -- One RemoteEvent dispatches both cooldown upgrades and tool unlocks. Client
 -- sends the key; server tries cooldown first, falls back to unlock — keys are

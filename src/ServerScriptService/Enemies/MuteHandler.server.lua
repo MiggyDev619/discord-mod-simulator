@@ -8,11 +8,12 @@ local ReplicatedStorage   = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 local Players             = game:GetService("Players")
 
-local Shared    = ReplicatedStorage:WaitForChild("Shared")
-local Config    = require(Shared:WaitForChild("Config"))
-local Effects   = require(Shared:WaitForChild("Effects"))
-local remotes   = Shared:WaitForChild("Remotes")
-local muteEnemy = remotes:WaitForChild("MuteEnemy")
+local Shared      = ReplicatedStorage:WaitForChild("Shared")
+local Config      = require(Shared:WaitForChild("Config"))
+local Effects     = require(Shared:WaitForChild("Effects"))
+local remotes     = Shared:WaitForChild("Remotes")
+local muteEnemy   = remotes:WaitForChild("MuteEnemy")
+local muteShotFx  = remotes:WaitForChild("MuteShotFx")
 
 local spawnerScript = ServerScriptService:WaitForChild("Enemies"):WaitForChild("EnemySpawner")
 local destroyEnemy  = spawnerScript:WaitForChild("DestroyEnemy")
@@ -69,4 +70,21 @@ end)
 
 Players.PlayerRemoving:Connect(function(player)
 	lastShotTime[player] = nil
+end)
+
+-- Multiplayer: bounce shot tracer events to every client so other players see
+-- this player's tracers. The shooter's own client already rendered locally;
+-- ClientMain skips its own bounce by checking shooter == LocalPlayer.
+-- Light validation: muzzle must be near the player's character to discourage
+-- spoofed-position spam (no real exploit since it's cosmetic, but cheap to
+-- gate against trolls).
+muteShotFx.OnServerEvent:Connect(function(player, muzzle, endPoint)
+	if typeof(muzzle) ~= "Vector3" or typeof(endPoint) ~= "Vector3" then return end
+	local character = player.Character
+	if not character then return end
+	local root = character:FindFirstChild("HumanoidRootPart")
+	if not root then return end
+	if (muzzle - root.Position).Magnitude > 8 then return end
+
+	muteShotFx:FireAllClients(player, muzzle, endPoint)
 end)
