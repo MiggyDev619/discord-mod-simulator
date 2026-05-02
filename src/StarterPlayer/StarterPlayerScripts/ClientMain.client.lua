@@ -18,6 +18,7 @@ local waveStarted        = remotes:WaitForChild("WaveStarted")
 local waveBreak          = remotes:WaitForChild("WaveBreak")
 local purchaseUpgrade    = remotes:WaitForChild("PurchaseUpgrade")
 local enemyCountChanged  = remotes:WaitForChild("EnemyCountChanged")
+local retryRun           = remotes:WaitForChild("RetryRun")
 
 local player        = Players.LocalPlayer
 local playerGui     = player:WaitForChild("PlayerGui")
@@ -31,6 +32,12 @@ local upgradeButton = mainUI:WaitForChild("UpgradeButton")
 local upgradePanel  = mainUI:WaitForChild("UpgradePanel")
 local cooldownPanel = mainUI:WaitForChild("CooldownPanel")
 local flashOverlay  = mainUI:WaitForChild("FlashOverlay")
+local gameOverPanel = mainUI:WaitForChild("GameOverPanel")
+local goHeadline    = gameOverPanel:WaitForChild("Headline")
+local goWavesStat   = gameOverPanel:WaitForChild("WavesStat")
+local goCoinsStat   = gameOverPanel:WaitForChild("CoinsStat")
+local goLevelStat   = gameOverPanel:WaitForChild("LevelStat")
+local retryButton   = gameOverPanel:WaitForChild("RetryButton")
 
 local runEnded = false  -- set true once either GameOver or GameWon fires
 
@@ -74,6 +81,19 @@ healthChanged.OnClientEvent:Connect(function(current, max)
 	healthText.Text = current .. " / " .. max
 end)
 
+local function showGameOverPanel(headlineText, headlineColor, wavesSurvived)
+	goHeadline.Text       = headlineText
+	goHeadline.TextColor3 = headlineColor
+	goWavesStat.Text      = string.format("Waves Survived: %d", wavesSurvived)
+	goCoinsStat.Text      = string.format("Coins This Run: %d", player:GetAttribute("RunCoinsEarned") or 0)
+	goLevelStat.Text      = string.format("Level: %d", player:GetAttribute("Level") or 1)
+	gameOverPanel.Visible = true
+end
+
+local function hideGameOverPanel()
+	gameOverPanel.Visible = false
+end
+
 gameOver.OnClientEvent:Connect(function()
 	runEnded = true
 	healthText.Text       = "SERVER DEAD"
@@ -85,6 +105,8 @@ gameOver.OnClientEvent:Connect(function()
 	waveLabel.Text = "Run ended"
 	waveLabel.TextColor3 = Theme.RedWarn
 	playFlash(Theme.RedWarn)
+	-- "Survived" = waves you fully cleared, NOT the wave you died on.
+	showGameOverPanel("SERVER DEAD", Theme.RedWarn, math.max(0, waveState.wave - 1))
 	print("[ClientMain] Game over received")
 end)
 
@@ -94,7 +116,21 @@ gameWon.OnClientEvent:Connect(function()
 	waveLabel.TextColor3 = Theme.GreenWin
 	healthText.TextColor3 = Theme.GreenWin
 	playFlash(Theme.GreenWin)
+	showGameOverPanel("VICTORY", Theme.GreenWin, waveState.wave)
 	print("[ClientMain] Victory received")
+end)
+
+-- Retry button: clear local run-end state immediately so subsequent server
+-- events (HealthChanged from Reset, then WaveStarted) render normally.
+retryButton.MouseButton1Click:Connect(function()
+	if not runEnded then return end
+	hideGameOverPanel()
+	runEnded              = false
+	healthText.TextColor3 = Theme.Zinc50
+	waveLabel.TextColor3  = Theme.Zinc50
+	waveLabel.Text        = ""  -- next WaveStarted will populate
+	retryRun:FireServer()
+	print("[ClientMain] Retry requested")
 end)
 
 -- Wave label is rendered from a tiny state machine because we combine inputs

@@ -1,0 +1,121 @@
+{
+  "className": "Frame",
+  "properties": {
+    "Size": {"UDim2": [[0, 360], [0, 280]]},
+    "Position": {"UDim2": [[0.5, 0], [0.5, 0]]},
+    "AnchorPoint": {"Vector2": [0.5, 0.5]},
+    "BackgroundColor3": [0.0353, 0.0353, 0.0431],
+    "BackgroundTransparency": 0.05,
+    "BorderSizePixel": 0,
+    "Visible": false,
+    "ZIndex": 99
+  },
+  "children": [
+    {
+      "className": "UICorner",
+      "properties": { "CornerRadius": {"UDim": [0, 12]} }
+    },
+    {
+      "className": "UIStroke",
+      "properties": {
+        "Color": [0.9804, 0.8, 0.0824],
+        "Thickness": 2,
+        "Transparency": 0.3
+      }
+    },
+    {
+      "className": "UIPadding",
+      "properties": {
+        "PaddingTop":    {"UDim": [0, 16]},
+        "PaddingBottom": {"UDim": [0, 16]},
+        "PaddingLeft":   {"UDim": [0, 20]},
+        "PaddingRight":  {"UDim": [0, 20]}
+      }
+    },
+    {
+      "name": "Headline",
+      "className": "TextLabel",
+      "properties": {
+        "Size": {"UDim2": [[1, 0], [0, 48]]},
+        "Position": {"UDim2": [[0, 0], [0, 0]]},
+        "BackgroundTransparency": 1,
+        "Text": "SERVER DEAD",
+        "TextColor3": [0.937, 0.267, 0.267],
+        "Font": "GothamBold",
+        "TextSize": 32,
+        "TextXAlignment": "Center",
+        "TextYAlignment": "Center",
+        "ZIndex": 100
+      }
+    },
+    {
+      "name": "WavesStat",
+      "className": "TextLabel",
+      "properties": {
+        "Size": {"UDim2": [[1, 0], [0, 28]]},
+        "Position": {"UDim2": [[0, 0], [0, 64]]},
+        "BackgroundTransparency": 1,
+        "Text": "Waves Survived: 0",
+        "TextColor3": [0.98, 0.98, 0.98],
+        "Font": "Gotham",
+        "TextSize": 18,
+        "TextXAlignment": "Center",
+        "ZIndex": 100
+      }
+    },
+    {
+      "name": "CoinsStat",
+      "className": "TextLabel",
+      "properties": {
+        "Size": {"UDim2": [[1, 0], [0, 28]]},
+        "Position": {"UDim2": [[0, 0], [0, 96]]},
+        "BackgroundTransparency": 1,
+        "Text": "Coins This Run: 0",
+        "TextColor3": [1, 0.84, 0],
+        "Font": "Gotham",
+        "TextSize": 18,
+        "TextXAlignment": "Center",
+        "ZIndex": 100
+      }
+    },
+    {
+      "name": "LevelStat",
+      "className": "TextLabel",
+      "properties": {
+        "Size": {"UDim2": [[1, 0], [0, 28]]},
+        "Position": {"UDim2": [[0, 0], [0, 128]]},
+        "BackgroundTransparency": 1,
+        "Text": "Level: 1",
+        "TextColor3": [0.98, 0.98, 0.98],
+        "Font": "Gotham",
+        "TextSize": 18,
+        "TextXAlignment": "Center",
+        "ZIndex": 100
+      }
+    },
+    {
+      "name": "RetryButton",
+      "className": "TextButton",
+      "properties": {
+        "Size": {"UDim2": [[0, 200], [0, 48]]},
+        "Position": {"UDim2": [[0.5, 0], [1, -16]]},
+        "AnchorPoint": {"Vector2": [0.5, 1]},
+        "BackgroundColor3": [0.9804, 0.8, 0.0824],
+        "BackgroundTransparency": 0,
+        "BorderSizePixel": 0,
+        "Text": "RETRY",
+        "TextColor3": [0.0353, 0.0353, 0.0431],
+        "Font": "GothamBold",
+        "TextSize": 22,
+        "AutoButtonColor": true,
+        "ZIndex": 100
+      },
+      "children": [
+        {
+          "className": "UICorner",
+          "properties": { "CornerRadius": {"UDim": [0, 8]} }
+        }
+      ]
+    }
+  ]
+}

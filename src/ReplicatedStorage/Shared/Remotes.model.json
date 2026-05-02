@@ -44,6 +44,10 @@
     {
       "name": "EnemyCountChanged",
       "className": "RemoteEvent"
+    },
+    {
+      "name": "RetryRun",
+      "className": "RemoteEvent"
     }
   ]
 }

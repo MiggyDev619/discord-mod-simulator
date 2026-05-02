@@ -41,9 +41,10 @@ local function upgradeCost(upg, level)
 end
 
 local function initPlayer(player)
-	player:SetAttribute("Coins", 0)
-	player:SetAttribute("Xp",    0)
-	player:SetAttribute("Level", 1)
+	player:SetAttribute("Coins",          0)
+	player:SetAttribute("Xp",             0)
+	player:SetAttribute("Level",          1)
+	player:SetAttribute("RunCoinsEarned", 0)  -- per-run tracker; reset on retry, NOT persisted
 	for _, upg in ipairs(Config.COOLDOWN_UPGRADES) do
 		player:SetAttribute(upg.levelAttr, 0)
 		player:SetAttribute(upg.baseAttr,  upg.base)
@@ -57,6 +58,17 @@ function CurrencyManager.AddCoins(player, amount)
 	if not player or not player.Parent then return end
 	local coins = (player:GetAttribute("Coins") or 0) + amount
 	player:SetAttribute("Coins", coins)
+	if amount > 0 then
+		local runCoins = (player:GetAttribute("RunCoinsEarned") or 0) + amount
+		player:SetAttribute("RunCoinsEarned", runCoins)
+	end
+end
+
+-- Called by RoundManager on retry. Zeros the per-run coin tracker so the next
+-- game-over panel reflects only what was earned during the new run.
+function CurrencyManager.ResetRun(player)
+	if not player or not player.Parent then return end
+	player:SetAttribute("RunCoinsEarned", 0)
 end
 
 -- Per-level XP — when xp >= level * XP_PER_LEVEL_BASE, level up and carry over

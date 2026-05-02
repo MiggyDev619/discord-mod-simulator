@@ -161,6 +161,26 @@ setWaveRemainingFunc.OnInvoke = function(n)
 	end
 end
 
+-- RoundManager calls this on retry to wipe the board. Destroys all live enemies,
+-- resets per-player ban cooldowns (so retry isn't gated by mid-fight cooldown
+-- state), and broadcasts a 0-count so the HUD label clears.
+local clearAllFunc = Instance.new("BindableFunction")
+clearAllFunc.Name     = "ClearAll"
+clearAllFunc.Parent   = script
+clearAllFunc.OnInvoke = function()
+	for _, data in ipairs(activeEnemies) do
+		if data.part and data.part.Parent then
+			data.part:Destroy()
+		end
+	end
+	activeEnemies      = {}
+	waveRemaining      = 0
+	lastBroadcastCount = -1
+	lastBanTime        = {}
+	enemyCountChanged:FireAllClients(0)
+	print("[EnemySpawner] ClearAll — wiped board for retry")
+end
+
 -- Shared destroy path. Called by the BanEnemy handler below AND by MuteHandler
 -- when a Mute Gun second-hit destroys an already-frozen target. Keeps Splitter
 -- spawning + combo reward + effects in one place — no duplicate logic between

@@ -54,4 +54,16 @@ function GameManager.IsGameWon()
 	return isGameWon
 end
 
+-- Reset run state for retry. Restores health, clears game-over flags, and
+-- broadcasts HealthChanged so the HUD bar refills. Called by RoundManager's
+-- RetryRun handler after the game-over loop has fully exited (player has to
+-- click the Retry button, which only appears after gameOver/gameWon fired).
+function GameManager.Reset()
+	serverHealth = Config.SERVER_MAX_HEALTH
+	isGameOver   = false
+	isGameWon    = false
+	print("[GameManager] Reset — health restored, run-over flags cleared")
+	healthChanged:FireAllClients(serverHealth, Config.SERVER_MAX_HEALTH)
+end
+
 return GameManager

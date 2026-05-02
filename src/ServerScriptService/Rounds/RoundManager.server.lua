@@ -6,18 +6,22 @@ local ReplicatedStorage   = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
 local Players             = game:GetService("Players")
 
-local Shared      = ReplicatedStorage:WaitForChild("Shared")
-local Config      = require(Shared:WaitForChild("Config"))
-local GameManager = require(ServerScriptService:WaitForChild("Systems"):WaitForChild("GameManager"))
+local Shared           = ReplicatedStorage:WaitForChild("Shared")
+local Config           = require(Shared:WaitForChild("Config"))
+local Systems          = ServerScriptService:WaitForChild("Systems")
+local GameManager      = require(Systems:WaitForChild("GameManager"))
+local CurrencyManager  = require(Systems:WaitForChild("CurrencyManager"))
 
 local remotes     = Shared:WaitForChild("Remotes")
 local waveStarted = remotes:WaitForChild("WaveStarted")
 local waveBreak   = remotes:WaitForChild("WaveBreak")
+local retryRun    = remotes:WaitForChild("RetryRun")
 
 local spawnerScript      = ServerScriptService:WaitForChild("Enemies"):WaitForChild("EnemySpawner")
 local spawnFunc          = spawnerScript:WaitForChild("Spawn")
 local countFunc          = spawnerScript:WaitForChild("GetActiveCount")
 local setWaveRemaining   = spawnerScript:WaitForChild("SetWaveRemaining")
+local clearAll           = spawnerScript:WaitForChild("ClearAll")
 
 local function pickEnemyType(wave)
 	if wave >= 4 and math.random() < Config.SPLITTER_CHANCE then
@@ -92,6 +96,34 @@ local function runBreak(nextWave)
 	end
 end
 
+-- Per-run wave loop. Re-invokable on retry; the previous loop has already
+-- exited by then because IsGameOver was true (it's how the loop ends), and
+-- only after the player clicks Retry does GameManager.Reset clear the flag.
+local function startRun()
+	task.spawn(function()
+		task.wait(Config.PRE_WAVE_DELAY)
+
+		local wave = 0
+		while not GameManager.IsGameOver() and wave < Config.WAVES_TO_WIN do
+			wave += 1
+
+			if wave > 1 then
+				print(string.format("[RoundManager] Break — wave %d in %ds", wave, Config.WAVE_BREAK_DURATION))
+				runBreak(wave)
+			end
+
+			if GameManager.IsGameOver() then break end
+			runWave(wave)
+		end
+
+		if not GameManager.IsGameOver() then
+			GameManager.Win()
+		end
+
+		print("[RoundManager] Stopped at wave", wave)
+	end)
+end
+
 task.spawn(function()
 	-- Wait for at least one player, then give their ClientMain time to mount its
 	-- OnClientEvent handlers. Without this, wave 1's WaveStarted/EnemyCountChanged
@@ -100,25 +132,18 @@ task.spawn(function()
 	if #Players:GetPlayers() == 0 then
 		Players.PlayerAdded:Wait()
 	end
-	task.wait(Config.PRE_WAVE_DELAY)
+	startRun()
+end)
 
-	local wave = 0
-
-	while not GameManager.IsGameOver() and wave < Config.WAVES_TO_WIN do
-		wave += 1
-
-		if wave > 1 then
-			print(string.format("[RoundManager] Break — wave %d in %ds", wave, Config.WAVE_BREAK_DURATION))
-			runBreak(wave)
-		end
-
-		if GameManager.IsGameOver() then break end
-		runWave(wave)
-	end
-
+retryRun.OnServerEvent:Connect(function(player)
 	if not GameManager.IsGameOver() then
-		GameManager.Win()
+		print("[RoundManager] Retry rejected from", player.Name, "— run still in progress")
+		return
 	end
 
-	print("[RoundManager] Stopped at wave", wave)
+	print("[RoundManager] Retry from", player.Name, "— resetting state and restarting run")
+	clearAll:Invoke()
+	GameManager.Reset()
+	CurrencyManager.ResetRun(player)
+	startRun()
 end)
