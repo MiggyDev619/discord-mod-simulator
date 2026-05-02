@@ -18,7 +18,7 @@ local Shared          = ReplicatedStorage:WaitForChild("Shared")
 local Config          = require(Shared:WaitForChild("Config"))
 local CurrencyManager = require(script.Parent:WaitForChild("CurrencyManager"))
 
-local SCHEMA_VERSION       = 4
+local SCHEMA_VERSION       = 5
 local STORE_NAME           = "DMS_PlayerData_v1" .. (RunService:IsStudio() and "_dev" or "")
 local LOAD_RETRY_ATTEMPTS  = 3
 local LOAD_RETRY_BACKOFFS  = { 1, 2 } -- waits between attempt 1→2 and 2→3; 3rd attempt has no wait after
@@ -54,10 +54,11 @@ end
 
 local function snapshot(player)
 	local data = {
-		version = SCHEMA_VERSION,
-		coins   = player:GetAttribute("Coins") or 0,
-		xp      = player:GetAttribute("Xp")    or 0,
-		level   = player:GetAttribute("Level") or 1,
+		version            = SCHEMA_VERSION,
+		coins              = player:GetAttribute("Coins") or 0,
+		xp                 = player:GetAttribute("Xp")    or 0,
+		level              = player:GetAttribute("Level") or 1,
+		starterPackClaimed = player:GetAttribute("StarterPackClaimed") == true,
 	}
 	for _, upg in ipairs(Config.COOLDOWN_UPGRADES) do
 		data[upg.levelAttr] = player:GetAttribute(upg.levelAttr) or 0
@@ -91,6 +92,12 @@ local function migrate(data)
 		data.xp      = 0
 		data.level   = 1
 		data.version = 4
+	end
+	if data.version == 4 then
+		-- starterPackClaimed defaults false: any v4 player who buys the Starter
+		-- Pack later still gets the grant. Players who never buy it never see it.
+		data.starterPackClaimed = false
+		data.version            = 5
 	end
 	return data
 end
@@ -140,9 +147,10 @@ local function loadPlayer(player)
 
 	loaded[player] = true
 
-	player:GetAttributeChangedSignal("Coins"):Connect(function() dirty[player] = true end)
-	player:GetAttributeChangedSignal("Xp"):Connect(function()    dirty[player] = true end)
-	player:GetAttributeChangedSignal("Level"):Connect(function() dirty[player] = true end)
+	player:GetAttributeChangedSignal("Coins"):Connect(function()              dirty[player] = true end)
+	player:GetAttributeChangedSignal("Xp"):Connect(function()                 dirty[player] = true end)
+	player:GetAttributeChangedSignal("Level"):Connect(function()              dirty[player] = true end)
+	player:GetAttributeChangedSignal("StarterPackClaimed"):Connect(function() dirty[player] = true end)
 	for _, upg in ipairs(Config.COOLDOWN_UPGRADES) do
 		player:GetAttributeChangedSignal(upg.levelAttr):Connect(function() dirty[player] = true end)
 	end

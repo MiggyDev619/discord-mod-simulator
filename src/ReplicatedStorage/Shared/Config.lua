@@ -198,6 +198,79 @@ Config.PERSISTENCE_AUTOSAVE_INTERVAL = 60  -- seconds between dirty-player autos
 Config.XP_PER_LEVEL_BASE = 100
 Config.XP_MAX_LEVEL      = 25
 
+-- Gamepasses (one-time R$ purchases). `id` placeholders are 0 — replace with
+-- real IDs from create.roblox.com. See docs/USER-ACTIONS.md §B.
+-- effectAttr: name of the Player attribute set to true when ownership is detected.
+Config.GAMEPASSES = {
+	{
+		key         = "DoubleCoins",
+		id          = 0,  -- TODO: replace with real gamepass id
+		label       = "Double Coins",
+		description = "Earn 2× coins from every kill, forever.",
+		price       = 199,
+		effectAttr  = "DoubleCoinsOwned",
+	},
+	{
+		key         = "FasterCooldowns",
+		id          = 0,  -- TODO: replace with real gamepass id
+		label       = "Faster Cooldowns",
+		description = "All tools cool down 30% faster. Stacks with cooldown upgrades.",
+		price       = 299,
+		effectAttr  = "FasterCooldownsOwned",
+	},
+	{
+		key         = "StarterPack",
+		id          = 0,  -- TODO: replace with real gamepass id
+		label       = "Starter Pack",
+		description = "Skip the early grind: all tool unlocks + 500 coins.",
+		price       = 499,
+		effectAttr  = "StarterPackOwned",
+	},
+}
+
+-- Effect tunables for gamepasses
+Config.DOUBLE_COINS_MULT       = 2     -- multiplier for AddCoins when DoubleCoinsOwned
+Config.FASTER_COOLDOWNS_MULT   = 0.7   -- cooldown multiplier when FasterCooldownsOwned
+Config.STARTER_PACK_COIN_GRANT = 500   -- one-time coin grant on first claim
+
+-- Dev Products (consumable R$ purchases). Same placeholder pattern as gamepasses.
+-- handler is the function key in ProductHandler that runs on grant.
+Config.DEV_PRODUCTS = {
+	{
+		key         = "InstantRevive",
+		id          = 0,  -- TODO: replace with real product id
+		label       = "Instant Revive",
+		description = "Restore your server's health to full mid-run.",
+		price       = 99,
+	},
+	{
+		key         = "CoinPackSmall",
+		id          = 0,  -- TODO: replace with real product id
+		label       = "Coin Pack — Small",
+		description = "+100 coins instantly.",
+		price       = 49,
+		coinAmount  = 100,
+	},
+	{
+		key         = "CoinPackLarge",
+		id          = 0,  -- TODO: replace with real product id
+		label       = "Coin Pack — Large",
+		description = "+500 coins instantly.",
+		price       = 199,
+		coinAmount  = 500,
+	},
+	{
+		key         = "XpBoost",
+		id          = 0,  -- TODO: replace with real product id
+		label       = "XP Boost (10 min)",
+		description = "Earn 2× XP for the next 10 minutes.",
+		price       = 99,
+		durationSec = 600,
+	},
+}
+
+Config.XP_BOOST_MULT = 2  -- multiplier for AddXp when XpBoostUntil > tick()
+
 -- Effects
 -- Drop a Roblox sound asset ID here (e.g. "rbxassetid://9125657040"). Empty string = silent ban.
 -- In Studio: View → Toolbox → search "impact" / "whoosh" / "punch", right-click → Copy Asset ID.

@@ -36,15 +36,28 @@ local function cooldownForLevel(upg, level)
 	return math.max(upg.minValue, upg.base - (upg.reduction * level))
 end
 
+-- Effective cooldown after gamepass multipliers. Floor (upg.minValue) is
+-- applied AFTER the gamepass multiplier so passes don't push tools below
+-- their balanced minimum (0.1s for Ban, etc.).
+local function effectiveCooldownForLevel(player, upg, level)
+	local cd = upg.base - (upg.reduction * level)
+	if player:GetAttribute("FasterCooldownsOwned") then
+		cd = cd * Config.FASTER_COOLDOWNS_MULT
+	end
+	return math.max(upg.minValue, cd)
+end
+
 local function upgradeCost(upg, level)
 	return upg.baseCost * (level + 1)
 end
 
 local function initPlayer(player)
-	player:SetAttribute("Coins",          0)
-	player:SetAttribute("Xp",             0)
-	player:SetAttribute("Level",          1)
-	player:SetAttribute("RunCoinsEarned", 0)  -- per-run tracker; reset on retry, NOT persisted
+	player:SetAttribute("Coins",              0)
+	player:SetAttribute("Xp",                 0)
+	player:SetAttribute("Level",              1)
+	player:SetAttribute("RunCoinsEarned",     0)  -- per-run tracker; reset on retry, NOT persisted
+	player:SetAttribute("StarterPackClaimed", false)
+	player:SetAttribute("XpBoostUntil",       0)
 	for _, upg in ipairs(Config.COOLDOWN_UPGRADES) do
 		player:SetAttribute(upg.levelAttr, 0)
 		player:SetAttribute(upg.baseAttr,  upg.base)
@@ -56,6 +69,10 @@ end
 
 function CurrencyManager.AddCoins(player, amount)
 	if not player or not player.Parent then return end
+	-- Double Coins gamepass multiplier applies to all positive coin gains.
+	if amount > 0 and player:GetAttribute("DoubleCoinsOwned") then
+		amount = amount * Config.DOUBLE_COINS_MULT
+	end
 	local coins = (player:GetAttribute("Coins") or 0) + amount
 	player:SetAttribute("Coins", coins)
 	if amount > 0 then
@@ -75,6 +92,11 @@ end
 -- the overflow. Loops in case a single award covers multiple levels.
 function CurrencyManager.AddXp(player, amount)
 	if not player or not player.Parent or amount <= 0 then return end
+	-- XP Boost dev product: 2× XP for the active boost window.
+	local boostUntil = player:GetAttribute("XpBoostUntil") or 0
+	if tick() < boostUntil then
+		amount = amount * Config.XP_BOOST_MULT
+	end
 	local xp     = (player:GetAttribute("Xp")    or 0) + amount
 	local level  = player:GetAttribute("Level") or 1
 	local needed = level * Config.XP_PER_LEVEL_BASE
@@ -132,11 +154,12 @@ function CurrencyManager.TryPurchaseCooldown(player, upgradeKey)
 	end
 
 	local newLevel = level + 1
+	local newCd    = effectiveCooldownForLevel(player, upg, newLevel)
 	player:SetAttribute("Coins",       coins - cost)
 	player:SetAttribute(upg.levelAttr, newLevel)
-	player:SetAttribute(upg.baseAttr,  cooldownForLevel(upg, newLevel))
+	player:SetAttribute(upg.baseAttr,  newCd)
 
-	print("[CurrencyManager]", player.Name, "upgraded", upg.key, "to level", newLevel, "→", cooldownForLevel(upg, newLevel), "s")
+	print("[CurrencyManager]", player.Name, "upgraded", upg.key, "to level", newLevel, "→", newCd, "s")
 end
 
 function CurrencyManager.TryUnlockTool(player, toolKey)
@@ -161,17 +184,29 @@ end
 
 function CurrencyManager.LoadFromSave(player, data)
 	if not player or not player.Parent then return end
-	player:SetAttribute("Coins", tonumber(data.coins) or 0)
-	player:SetAttribute("Xp",    tonumber(data.xp)    or 0)
-	player:SetAttribute("Level", math.clamp(tonumber(data.level) or 1, 1, Config.XP_MAX_LEVEL))
+	player:SetAttribute("Coins",              tonumber(data.coins) or 0)
+	player:SetAttribute("Xp",                 tonumber(data.xp)    or 0)
+	player:SetAttribute("Level",              math.clamp(tonumber(data.level) or 1, 1, Config.XP_MAX_LEVEL))
+	player:SetAttribute("StarterPackClaimed", data.starterPackClaimed == true)
 	for _, upg in ipairs(Config.COOLDOWN_UPGRADES) do
 		local level = math.clamp(tonumber(data[upg.levelAttr]) or 0, 0, upg.maxLevel)
 		player:SetAttribute(upg.levelAttr, level)
-		player:SetAttribute(upg.baseAttr,  cooldownForLevel(upg, level))
+		player:SetAttribute(upg.baseAttr,  effectiveCooldownForLevel(player, upg, level))
 	end
 	for _, ul in ipairs(Config.TOOL_UNLOCKS) do
 		local attr = unlockedAttr(ul.key)
 		player:SetAttribute(attr, data[attr] == true)
+	end
+end
+
+-- Recompute all 4 cooldown attributes for a player. Used by GamepassManager
+-- when FasterCooldowns ownership flips, so the new multiplier takes effect on
+-- existing levels.
+function CurrencyManager.RecomputeAllCooldowns(player)
+	if not player or not player.Parent then return end
+	for _, upg in ipairs(Config.COOLDOWN_UPGRADES) do
+		local level = player:GetAttribute(upg.levelAttr) or 0
+		player:SetAttribute(upg.baseAttr, effectiveCooldownForLevel(player, upg, level))
 	end
 end
 
