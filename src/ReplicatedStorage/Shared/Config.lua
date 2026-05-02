@@ -24,6 +24,28 @@ Config.TELEPORTER_DISTANCE   = 22    -- studs jumped per warp; big enough to fee
 Config.TELEPORTER_SOUND_ID       = "rbxassetid://133226202202712"
 Config.TELEPORTER_SOUND_VOLUME   = 0.7
 
+-- Meme enemies (Day 25 polish) — pure flavor variants with chat-bubble speech.
+-- Stats are intentionally distinct from the base 4 (Troll/Spammer/Teleporter/
+-- Splitter) so they read as "different category" not "more of the same."
+
+-- Karen: slow, high HP — the "Karen who won't leave the channel" enemy.
+Config.KAREN_SPEED   = 10
+Config.KAREN_HEALTH  = 40
+Config.KAREN_CHANCE  = 0.10  -- wave 2+
+Config.COIN_KAREN    = 25
+
+-- Furry: fast, fragile — chaos energy, slips through normal lines.
+Config.FURRY_SPEED   = 28
+Config.FURRY_HEALTH  = 8
+Config.FURRY_CHANCE  = 0.15  -- wave 3+
+Config.COIN_FURRY    = 22
+
+-- Discord Mod: medium speed + HP — power-tripping rule-enforcer.
+Config.DISCORD_MOD_SPEED  = 15
+Config.DISCORD_MOD_HEALTH = 25
+Config.DISCORD_MOD_CHANCE = 0.10  -- wave 4+
+Config.COIN_DISCORD_MOD   = 28
+
 -- Splitter enemy (banning it spawns smaller, faster children — "one spam account, two more appear")
 Config.SPLITTER_SPEED            = 14    -- between Troll and Spammer
 Config.SPLITTER_HEALTH           = 20
@@ -117,6 +139,7 @@ Config.COIN_SPAMMER          = 20
 Config.COIN_TELEPORTER       = 25   -- harder to catch — pays a bit more than spammer
 Config.COIN_SPLITTER         = 30   -- dangerous if left alive — biggest non-child reward
 Config.COIN_SPLITTER_CHILD   = 5    -- low — keeps splitter from being a coin farm
+-- Meme enemy coin rewards live with their stats blocks above.
 Config.COIN_KICK_PER_HIT     = 5    -- per enemy in the kick cone; small so it doesn't replace banning
 
 -- Combo bonus: destroying an enemy with FrozenUntil OR MuteFrozenUntil active

@@ -132,6 +132,8 @@ function Effects.BanEffect(position, reward)
 	if reward and reward > 0 then
 		spawnCoinPopup(position, reward)
 	end
+
+	spawnBanMemePopup(position)
 end
 
 -- Blue particle burst + shockwave + glow at the position of a muted enemy.
@@ -394,6 +396,107 @@ function Effects.SplitEffect(position)
 	end
 
 	Debris:AddItem(anchor, EFFECT_LIFETIME)
+end
+
+-- Random "you got banned lol"-style popup that joins the BanEffect's coin
+-- floater. Picks from a small pool of memey one-liners. Pure flavor.
+local BAN_MEME_PHRASES = {
+	"you got banned lol",
+	"skill issue",
+	"L + ratio",
+	"imagine getting banned",
+	"stay mad",
+	"ratio'd",
+	"go touch grass",
+}
+
+local function spawnBanMemePopup(position)
+	local phrase = BAN_MEME_PHRASES[math.random(1, #BAN_MEME_PHRASES)]
+	local anchor = createAnchor(position + Vector3.new(0, 4, 0))
+
+	local billboard = Instance.new("BillboardGui")
+	billboard.Size           = UDim2.new(0, 200, 0, 36)
+	billboard.AlwaysOnTop    = true
+	billboard.LightInfluence = 0
+	billboard.Parent         = anchor
+
+	local label = Instance.new("TextLabel")
+	label.Size                   = UDim2.new(1, 0, 1, 0)
+	label.BackgroundTransparency = 1
+	label.Text                   = phrase
+	label.TextColor3             = Color3.fromRGB(255, 80, 80)
+	label.TextStrokeTransparency = 0
+	label.TextStrokeColor3       = Color3.fromRGB(0, 0, 0)
+	label.Font                   = Enum.Font.GothamBold
+	label.TextSize               = 22
+	label.Parent                 = billboard
+
+	local rise = TweenService:Create(
+		anchor,
+		TweenInfo.new(1.4, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+		{ Position = anchor.Position + Vector3.new(0, 4, 0) }
+	)
+	local fade = TweenService:Create(
+		label,
+		TweenInfo.new(1.4, Enum.EasingStyle.Linear),
+		{ TextTransparency = 1, TextStrokeTransparency = 1 }
+	)
+	rise:Play()
+	fade:Play()
+	Debris:AddItem(anchor, 1.6)
+end
+
+-- Speech bubble above an enemy (chat-bubble style). Used for meme enemies on
+-- spawn. Anchored to the enemy's current position; doesn't follow if it moves
+-- (cheap; lasts 3s, enemy will mostly still be near the spawn point).
+function Effects.SpeechBubble(part, phrase)
+	if not part or not part.Parent then return end
+	local anchor = createAnchor(part.Position + Vector3.new(0, part.Size.Y / 2 + 2, 0))
+
+	local billboard = Instance.new("BillboardGui")
+	billboard.Size           = UDim2.new(0, 240, 0, 60)
+	billboard.AlwaysOnTop    = true
+	billboard.LightInfluence = 0
+	billboard.Parent         = anchor
+
+	local frame = Instance.new("Frame")
+	frame.Size                   = UDim2.new(1, 0, 1, 0)
+	frame.BackgroundColor3       = Color3.fromRGB(20, 20, 24)
+	frame.BackgroundTransparency = 0.15
+	frame.BorderSizePixel        = 0
+	frame.Parent                 = billboard
+	local corner = Instance.new("UICorner")
+	corner.CornerRadius = UDim.new(0, 8)
+	corner.Parent       = frame
+
+	local label = Instance.new("TextLabel")
+	label.Size                   = UDim2.new(1, -12, 1, -8)
+	label.Position               = UDim2.new(0, 6, 0, 4)
+	label.BackgroundTransparency = 1
+	label.Text                   = phrase
+	label.TextColor3             = Color3.fromRGB(250, 250, 250)
+	label.Font                   = Enum.Font.Gotham
+	label.TextSize               = 14
+	label.TextWrapped            = true
+	label.TextXAlignment         = Enum.TextXAlignment.Center
+	label.TextYAlignment         = Enum.TextYAlignment.Center
+	label.Parent                 = frame
+
+	local rise = TweenService:Create(
+		anchor,
+		TweenInfo.new(2.8, Enum.EasingStyle.Quad, Enum.EasingDirection.Out),
+		{ Position = anchor.Position + Vector3.new(0, 1.5, 0) }
+	)
+	local fade = TweenService:Create(frame, TweenInfo.new(2.8, Enum.EasingStyle.Linear), {
+		BackgroundTransparency = 1,
+	})
+	local fadeText = TweenService:Create(label, TweenInfo.new(2.8, Enum.EasingStyle.Linear), {
+		TextTransparency = 1,
+	})
+	rise:Play()
+	fade:Play()
+	fadeText:Play()
+	Debris:AddItem(anchor, 3.0)
 end
 
 -- Hitscan tracer for the Mute Gun. Cyan/electric line stretched between gun

@@ -73,6 +73,51 @@ local ENEMY_TYPES = {
 		size   = Vector3.new(2, 2.6, 2),
 		reward = Config.COIN_SPLITTER_CHILD,
 	},
+
+	-- Meme enemies (Day 25). Each has a speechPool — Effects.SpeechBubble fires
+	-- with a random phrase on spawn for chat-bubble flavor.
+	Karen = {
+		speed      = Config.KAREN_SPEED,
+		health     = Config.KAREN_HEALTH,
+		color      = BrickColor.new("Cool yellow"),  -- Karen-blonde tan
+		size       = Vector3.new(3.5, 4.5, 3.5),    -- biggest base enemy
+		reward     = Config.COIN_KAREN,
+		speechPool = {
+			"I WANT TO SPEAK TO THE OWNER",
+			"THIS IS RIDICULOUS",
+			"BRINGING THIS UP WITH MY LAWYER",
+			"DO YOU KNOW WHO I AM",
+			"I'm calling corporate",
+		},
+	},
+	Furry = {
+		speed      = Config.FURRY_SPEED,
+		health     = Config.FURRY_HEALTH,
+		color      = BrickColor.new("Hot pink"),
+		size       = Vector3.new(1.8, 2.8, 1.8),
+		reward     = Config.COIN_FURRY,
+		speechPool = {
+			"owo what's this",
+			"*notices ur server*",
+			"uwu",
+			"rawr xD",
+			"*nuzzles ur firewall*",
+		},
+	},
+	DiscordMod = {
+		speed      = Config.DISCORD_MOD_SPEED,
+		health     = Config.DISCORD_MOD_HEALTH,
+		color      = BrickColor.new("Bright blue"),  -- closest to Discord blurple in BrickColor
+		size       = Vector3.new(2.5, 3.5, 2.5),
+		reward     = Config.COIN_DISCORD_MOD,
+		speechPool = {
+			"stop arguing in #general",
+			"READ THE RULES",
+			"this is your final warning",
+			"/timeout @everyone",
+			"did you read the pinned message",
+		},
+	},
 }
 
 -- spawnPos / sizeOverride / speedOverride are used by the Splitter ban hook to
@@ -126,6 +171,12 @@ local function spawnEnemy(typeName, speedMultiplier, spawnPos, sizeOverride, spe
 	-- with. SplitterChild spawns don't bump the count: they were pre-counted here.
 	if typeName == "Splitter" then
 		waveRemaining = waveRemaining + Config.SPLITTER_CHILD_COUNT
+	end
+
+	-- Meme enemies pop a speech bubble on spawn — pure flavor.
+	if def.speechPool then
+		local phrase = def.speechPool[math.random(1, #def.speechPool)]
+		Effects.SpeechBubble(enemy, phrase)
 	end
 
 	print("[EnemySpawner] Spawned", typeName, "| speed:", speed, "| active:", #activeEnemies)

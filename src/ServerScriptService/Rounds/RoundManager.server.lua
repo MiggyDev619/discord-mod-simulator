@@ -23,15 +23,24 @@ local countFunc          = spawnerScript:WaitForChild("GetActiveCount")
 local setWaveRemaining   = spawnerScript:WaitForChild("SetWaveRemaining")
 local clearAll           = spawnerScript:WaitForChild("ClearAll")
 
+-- Table-driven type picker. Iterates in order; first roll under chance wins.
+-- Higher-tier enemies listed first so they get first shot at the slot
+-- (matches the "highest-tier-eligible enemy gets first claim" rule from
+-- 2026-04-25 Day 9 devlog). Defaults to Troll if nothing rolls.
+local ENEMY_PICK_TABLE = {
+	{ type = "Splitter",   minWave = 4, chance = Config.SPLITTER_CHANCE },
+	{ type = "DiscordMod", minWave = 4, chance = Config.DISCORD_MOD_CHANCE },
+	{ type = "Furry",      minWave = 3, chance = Config.FURRY_CHANCE },
+	{ type = "Teleporter", minWave = 3, chance = Config.TELEPORTER_CHANCE },
+	{ type = "Karen",      minWave = 2, chance = Config.KAREN_CHANCE },
+	{ type = "Spammer",    minWave = 2, chance = Config.SPAMMER_CHANCE },
+}
+
 local function pickEnemyType(wave)
-	if wave >= 4 and math.random() < Config.SPLITTER_CHANCE then
-		return "Splitter"
-	end
-	if wave >= 3 and math.random() < Config.TELEPORTER_CHANCE then
-		return "Teleporter"
-	end
-	if wave >= 2 and math.random() < Config.SPAMMER_CHANCE then
-		return "Spammer"
+	for _, e in ipairs(ENEMY_PICK_TABLE) do
+		if wave >= e.minWave and math.random() < e.chance then
+			return e.type
+		end
 	end
 	return "Troll"
 end
