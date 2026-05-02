@@ -155,12 +155,14 @@ serverZone.Color    = BLURPLE
 serverZone.Material = Enum.Material.Neon
 serverZone.Transparency = 0.3
 
--- Default SpawnLocation (the green spawn pad) usually sits mid-lane. Move it
--- behind the moderator's desk so it's out of the lane and doesn't visually
--- compete with the brand palette. Resize small + recolor to brand.
+-- Default SpawnLocation: positioned on the BASE side of the lane (behind the
+-- ServerZone), so the player spawns facing the incoming enemies — natural
+-- defender position. Y preserved from existing spawn so it stays on whatever
+-- floor level the user has.
 local spawn = workspace:FindFirstChildOfClass("SpawnLocation")
 if spawn then
-    spawn.Position    = deskCenter - laneDir * 4 + Vector3.new(0, -1.4, 0)  -- behind desk, on floor
+    local target = endPos + laneDir * 4  -- 4 studs behind ServerZone, in lane center
+    spawn.Position    = Vector3.new(target.X, spawn.Position.Y, target.Z)
     spawn.Size        = Vector3.new(4, 1, 4)
     spawn.Color       = YELLOW
     spawn.Material    = Enum.Material.Neon
@@ -179,6 +181,7 @@ print(string.format("[MapPolish] Created 12 parts + recolored baseplate/EnemySta
 | Green SpawnLocation in middle of lane | Untouched | Moved behind desk, resized small, recolored brand yellow |
 | Blue ServerZone | Untouched | Discord blurple Neon (matches monitor) |
 | Default-color EnemyStart | Untouched | Warning red Neon, slightly translucent |
+| SpawnLocation position | Behind moderator's desk (enemy side) | Behind ServerZone (base side) — player spawns facing enemies |
 
 ---
 
