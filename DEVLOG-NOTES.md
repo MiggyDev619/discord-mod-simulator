@@ -12,6 +12,123 @@ Raw build notes for the Discord Mod Simulator Roblox project, structured for a d
 
 ---
 
+## 2026-05-02 — Day 12 / Phase 2 close (bookkeeping)
+
+> Not a code session. A deliberate checkpoint: Phase 2 ("Game Feel," Days 6–12) is closed before Phase 3 work begins. The brand rebrand (Apr 25–26) and the recording-session polish (May 1) were the de-facto closing beats — both real game-feel work even though neither was a planned dev day. This entry exists so Phase 3 starts from honest documentation, not stale `plan.md` §2 text claiming Day 5 / Phase 1.
+
+### What "Phase 2 closed" means against `plan.md` §7
+
+| Phase 2 scope (Days 6–12) | Status |
+|---|---|
+| Hit effects, enemy feedback, simple animations (Days 6–7) | ✓ — `Effects.lua`, `HitFlash`, camera shake, swing anim, visible hammer |
+| Mute Gun, Timeout, Kick (Day 8) | ✓ — full status-effect toolkit, priority ladder `Kick > Timeout > Mute > seek` |
+| Path variation, annoying enemies (Days 9–10) | ✓ Teleporter + Splitter; ✗ path variation (skipped — enemy variety carried the differentiation, single-lane geometry kept aim/positioning legible) |
+| Health bar, enemy count, round number, currency UI (Days 11–12) | ✓ Day 11 UI polish v1 + `FlashOverlay` + brand rebrand layered on top |
+
+The May 1 recording session functioned as the de-facto Day 12 closing beat — it forced a quality bar that surfaced two real game-feel gaps (`Effects` shockwave/light and `BanHammer` shake), both committed to main as `228b9fc` and `da556b7`. See the 2026-05-01 entry for the full recording writeup.
+
+### Bookkeeping done this session
+
+- **`plan.md` §2 rewritten**: Day 5 → Day 12, Phase 1 → Phase 2 closed, prior "Done (Days 1–4)" + "Next up (Day 5)" replaced with a per-day Phase 1 + Phase 2 ledger, "Next up" now pointing at Phase 3 (Days 13–18).
+- **`plan.md` §8 master checklist** ticked: all of Core Systems, Gameplay, Polish; Currency / Shop / Upgrades from Progression; Health / Round / Currency UI. Three boxes deliberately left unchecked: XP / levels (Day 16–17), Game-over screen (`FlashOverlay` covers the visual flash but Day 18 builds the full screen + retry button), Monetization, Launch. Inline notes added to each ticked item naming the concrete artifact (e.g. "Faster Ban Hammer L1–3; tree expansion is Phase 3") so the checklist also serves as a "what exactly is built" reference.
+- **This entry written.**
+
+### Decisions made (and why)
+
+- **Wrap entry exists at all.** Days 11 and 12 ran together with the brand rebrand and the May 1 recording session, neither of which produced a "Day 12: Phase 2 close" devlog naturally. The May 1 entry is recording-focused, not phase-focused. Without a deliberate close, Phase 3 work would start while §2 still claimed Day 5 / Phase 1 — `plan.md` is what someone reads top-down to onboard, and it shouldn't lie. Cost: ~30 min. Benefit: every future Phase 3 session starts from honest checkpoint state.
+- **Path variation marked ✗ skipped, not ✗ deferred.** Original Day 9–10 scope mentioned it; enemy variety (Teleporter + Splitter) shipped instead. Single-lane geometry has held up across all four enemy types and four tools — adding a second lane now would dilute aim/positioning legibility for no clear gameplay gain. If Phase 3 modifiers ("Spam Storm") want spatial variety, they'll get it via spawn rate / direction, not via path geometry.
+- **"Game over screen" intentionally left unchecked despite `FlashOverlay` shipping.** The flash is run-end visual feedback — it's a polish item, ticked under Polish. Day 18's "retry button + full game over screen" is a different deliverable (UI screen + flow restart). Conflating them now would re-mark the box on Day 18 anyway.
+- **No code touched.** Considered piggybacking a small Phase 2 cleanup pass — there isn't one needed. Working tree was clean coming in; closing the phase doesn't require shipping more polish, it requires acknowledging the existing polish is enough.
+
+### Phase 2 by the numbers
+
+For the Clip 10 re-pitch (BACKLOG, currently filed as a "Phase 2 in N days" companion piece): re-tally `src/` LOC at next code session. Last count was 1,691 Lua LOC across 15 files on 2026-04-25; brand rebrand + Day 11 UI + recording polish has likely moved both numbers.
+
+### What's intentionally not built yet (Phase 3 unblocked, in order)
+
+- **Day 13 — DataStore design pass.** First persistence work in the project. Read/write model needs to exist before the upgrade tree gets built on top of it; otherwise the tree gets retrofitted to whatever the first save format happened to be. Specifics to decide on Day 13: per-player `DataStore` or single-key player table, autosave cadence, what happens on load failure (default vs hard-block), upgrade-spec versioning so future schema changes don't wipe saves.
+- **Day 13–14 — Upgrade tree.** Currently one upgrade (Faster Ban Hammer). The shop button + `CurrencyManager.TryPurchaseCooldown` pattern generalizes — but only after persistence exists. Don't build the second upgrade against in-memory state and then refactor.
+- **Phase 2 deferred polish still standing.** Cooldown sweep animation, custom hotbar replacement (Phase 5 per CLAUDE.md), Mute Gun real aim-and-shoot (`plan.md` §9), Kick whiff visual-without-audio, Kick Y-axis lift, Splitter children inheriting muted/frozen visuals, Teleport telegraph, real level decoration (Phase 5). Not blockers for Phase 3.
+
+### Blockers for next session
+
+- None. Working tree is clean. 11 commits ahead of `origin/main` (this entry + the two `plan.md` edits will make 12) — push is the user's call, never been pushed yet by intent.
+
+### Hooks for the post
+
+Pick one. Not all. (These are unusual — the work was bookkeeping, so the hooks are about the *practice* of phase closing, not about code.)
+
+- **"Phase boundaries are documentation, not engineering."** — the argument for explicit phase-close commits even on a solo project. `plan.md` lying about your current state isn't a doc bug — it's a planning bug, because it's what you onboard yourself with at the start of every session. 30 minutes to fix; pays back the first time someone (you, future-you, an AI assistant) reads the project top-down.
+- **"The recording session was the Phase 2 close, I just didn't know it."** — sometimes the closing beat of a phase isn't a planned dev day. May 1 forced a quality bar that surfaced two real polish gaps; once those shipped, Phase 2 was actually done. The bookkeeping entry just acknowledges what already happened.
+- **"What `plan.md` §8 is for: a 30-second 'what's built' reference."** — the checklist isn't a TODO; it's a reverse index. Every ticked box names the concrete artifact ("Faster Ban Hammer L1–3", "Frame + `Fill`/`Label` bar"). Future-you reading "Upgrades ✓" without context would assume the tree is done; "Upgrades ✓ (Faster Ban Hammer L1–3; tree expansion is Phase 3)" tells the truth.
+
+---
+
+## 2026-05-01 — Recording session: 7 clips captured + game-feel polish
+
+> Single overnight push (Thu Apr 30 evening → Fri May 1 early hours). Sunday Apr 26 recording slipped 5 days; pulled the trigger Friday instead. Captured 7 of 8 planned clips and shipped two real game-feel commits as a side-effect of recording surfacing visual gaps.
+
+### What got captured
+
+Raw files in `E:\Content\DMS\Raw\studio\` (gameplay) and `E:\Content\DMS\Raw\code\` (editor screencaps). VO folder empty (deferred).
+
+| Clip | Status | Notes |
+|---|---|---|
+| 01 — The loadout | ✓ | 4 tool-firing takes (Ban: 3 takes, others 1-2 each) + final hotbar reveal |
+| 02 — Three statuses | ✓ | Mute → Timeout → Kick chain on a single Spammer, ending on void launch |
+| 03 LEFT — Bad shake | ✓ | ~30s of banning with deliberately broken `Camera.CFrame` shake on RenderStepped |
+| 03 RIGHT — Good shake | ✓ | ~10s with the (now committed) bumped `CameraOffset` shake |
+| 04 — SERVER DEAD | ✓ | Wave 3 chaos → HP 0 → red FlashOverlay fires |
+| 05 OLD — Whiff bug | ✓ | 2 takes — Kick whiff plays sound + visual (gate temporarily removed) |
+| 05 SILENT — Whiff fix | ✓ | 2 takes — Kick whiff produces nothing (gate restored) |
+| 06 — Failed icons | ✗ skipped | User passed mid-session; not in rotation |
+| 07 — VICTORY | ✓ | Full 5-wave clear → green FlashOverlay fires |
+| 09 — Wave 3 transition | ✓ | Waves 1→2→3 with rapid tool-swapping ending on cleared zone |
+
+VOs for Clips 05 + 07 deferred — to record before each clip's editing pass next week. Casual rewrite of the 05 VO was drafted during the session (in `content-engine/docs/recording-status.md` — "Decisions changed" section).
+
+### What got built (real game-feel polish, both committed to main)
+
+- **`Effects: shockwave + light on Ban/Kick/Mute/Timeout for game-feel`** (commit `228b9fc`). Original Ban/Kick particle bursts read as "poof" not "bang" — drowned by `HitFlash`'s 0.15s white-neon despawn. Added expanding Neon-material shockwave Parts + brief `PointLight` glows + bumped particle counts (Ban 25→50, Kick 40→70). `HitFlash` duration 0.15→0.08s so red Ban particles get visible airtime. Mute/Timeout got smaller-scale ports (sphere shockwave 1→5 studs) for visual hierarchy: **Ban (loudest, destructive) > Kick (loud, AOE) > Mute / Timeout (medium, status)**.
+- **`BanHammer: bump shake duration + magnitude for visible feedback`** (commit `da556b7`). Original 0.18s / 0.35-magnitude was too subtle to register. Bumped to 0.30s / 0.75. Still uses `Humanoid.CameraOffset` (smooth, respects camera controller), just punchier. The bad-shake demo for Clip 03 LEFT was rewritten mid-session too — the `task.wait`-based loop in the staged `clip-recording-bad-shake` branch got smoothed out by the camera controller and looked like nothing. Rewrote to RenderStepped + bigger magnitude. The rewrite is preserved at `E:\Content\DMS\Raw\code\clip03-shake-comparison.lua` since it's not in any committed branch (`clip-recording-bad-shake` was deleted at EOD).
+
+### Decisions made (and why)
+
+- **Polish committed during recording, not after.** Effects.lua and BanHammer shake were dirty-fixed on the recording branch when their visual weakness blocked clean clip captures. Both are real Phase 2 game-feel improvements, not recording-only — committed to main rather than left in stash. The recording session forced a quality bar the dev sessions hadn't.
+- **`HitFlash` duration cut, not removed.** Considered killing `HitFlash` entirely (it's what was washing out the red Ban particles), but the white-flash-then-poof has its own readability value (sells the "destroyed" beat). Cut to 0.08s — short enough to clear the frame for Ban particles, long enough to register as a hit confirm.
+- **Bad-shake had to be rewritten, not just restored.** Original staged version (`task.wait(0.04)` loop with 0.5-stud max offset) didn't actually look broken on screen — camera controller smoothed it between writes. To demonstrate the failure mode in a clip, the bad shake had to *actually fight the controller* every frame. RenderStepped connection + 1.4-stud magnitude. Lesson: a "broken" example needs to look broken, not just *be* broken in the abstract.
+- **Clip 06 (failed icons) dropped, not deferred.** User passed mid-session. Different from Clip 08 + Clip 10 in BACKLOG — those were deferred for reconception. 06 is just out of rotation. Saves the editing-week budget; collapses 8-clip rotation to 7-clip rotation, last post Mon May 18.
+- **Level visual polish via runtime debug script, not committed assets.** Used a `LevelPolish.debug.server.lua` (gitignored, deleted post-session) to apply baseplate color, lighting tweaks, and EnemyStart/ServerZone glows at game start. Doesn't touch Workspace or Lighting in the Rojo tree (per CLAUDE.md, Workspace is intentionally out). Edit-mode look is back to defaults — clip captures had the polished look baked in via runtime application. Real level polish (decorations, walls, themed signage) is Phase 5 (Days 23-24) per plan §7.
+- **Logo not uploaded.** `miggydev-mark-200.png` still local-only. `Watermark.model.json` still has `rbxassetid://0` placeholder. CapCut overlay watermark in editing handles brand visibility — in-game corner watermark is a "would be nice" not a blocker. Roblox cloud upload needs Studio's Asset Manager to "Save to Roblox" (a place link), which creates a drift hazard with the local `.rbxlx` workflow. Skipped to preserve clean local-only state.
+
+### Quick state changes worth remembering
+
+- **`SoloSpawn` got keybind triggers** (`Z`/`X`/`C`/`V` for Spammer/Troll/Teleporter/Splitter) in addition to the chat command, because `RecordMode` hides chat. Server creates a runtime `_DebugSpawn` RemoteEvent in `ReplicatedStorage`; paired client script (`SoloSpawnInput.debug.client.lua`) fires it on key press. All four debug scripts deleted at EOD; the pattern is in `content-engine/docs/recording-status.md` if useful next time.
+- **`FlashOverlay` was tested for the first time** (had been committed Apr 25 untested). Both red and green flashes fire correctly via `GameManager.TakeDamage(99999)` / `GameManager.Win()`. Used a temp `FlashTest.debug.server.lua` with auto-fire mode constant (`MODE = "lose"` / `"win"`); deleted post-test.
+- **`clip-recording-bad-shake` branch deleted** at EOD per runbook §4.5. The bad-shake change was never committed; only existed in stash, then in working tree, now in the comparison file at `E:\Content\DMS\Raw\code\clip03-shake-comparison.lua`.
+
+### What's intentionally not built yet
+
+- **Voiceovers (Clips 05 + 07).** ~10 min in Audacity, save WAVs to `E:\Content\DMS\Raw\vo\`. To be recorded before each clip's editing pass.
+- **Logo upload to Roblox.** See decision rationale above. `INSERT-LOGO-ASSET-ID-HERE` searchable marker still in `Theme.lua` header.
+- **Real level decoration.** Yellow boundary walls, server-rack props, Discord-themed billboards. Phase 5 work (Days 23-24).
+- **Tool 3D models.** Still primitive Parts. Tight camera framing during clip captures hides this; full model pass is post-launch polish if at all.
+
+### Blockers for next session
+
+None. Working tree is clean (only untracked file is `docs/MiggyDev-DMS-Recording-Plan.md`, the user's planning doc). All recording-only debug state is gone. Two commits ready for a Phase 2 close devlog or roll into Phase 3 kickoff.
+
+### Hooks for the post
+
+Pick one. Not all.
+
+- **"My recording session debugged my game."** — recording forced a quality bar that dev sessions hadn't. Ban particles too thin → shockwave + light. BanHammer shake too subtle → bumped duration + magnitude. Bad-shake demo wasn't actually visibly broken → had to rewrite it to fight the camera controller every frame. Three real polish commits came out of capturing footage. Lesson: shipping for an audience surfaces problems regular playtesting doesn't.
+- **"A 'broken' example has to look broken."** — the bad-shake rewrite. The staged `task.wait(0.04)` loop wasn't fighting the camera controller because between writes, the controller smoothed it out. Visually identical to no shake. To demonstrate the failure mode, the bad version had to write `Camera.CFrame` on RenderStepped — same heartbeat as the controller — to produce visible snap-back. The intuition: in Roblox, a "wrong" approach doesn't necessarily *look* wrong; it competes with whatever framework code is running on the same loop, and the framework usually wins.
+- **"Three particles never beat one shockwave."** — the Effects.lua buff. 25 small sparkles drowned by a 0.15s white-neon flash read as "poof". One expanding Neon Part (1→8 studs over 0.4s) + a PointLight reads as "bang" — for the same compute budget. Visual punch is geometry + light, not particle count.
+- **"`HitFlash` is a feature, not a bug — but its duration was."** — the 0.15s → 0.08s cut. Originally added `HitFlash` so the player gets a "hit confirmed" beat before the enemy poofs. But it was *also* washing out the Ban particles for a third of their lifetime. Tuned, not removed: the white flash still does the hit-confirm job, just doesn't dominate the frame.
+
+---
+
 ## 2026-04-25 — Sunday recording prep: cuts, decisions, polish
 
 > Pre-production pass for the 10-clip Sunday recording session. Audit (commit `b68a82a`) flagged 4 hard blockers; this session resolves them via cuts and small code fixes. Same calendar day as the wave-1 race fix and Day 9–11 backfills — split out because this is content-prep, not gameplay code.

@@ -27,27 +27,38 @@
 
 ## 2. Where You Are Right Now
 
-**Day:** 5
-**Phase:** 1 — Core Game Loop
+**Day:** 12 (Phase 2 closed)
+**Phase:** 2 — Game Feel · CLOSED
+**Next phase:** 3 — Retention (Days 13–18)
 
-**Done (Days 1–4)**
-- Project structure + Rojo setup (Workspace kept out of Rojo tree — see `state.md`)
-- Map: `EnemyStart`, `ServerZone` (manual in Studio)
+> See `DEVLOG-NOTES.md` for per-session details. This is the at-a-glance state.
+
+**Done — Phase 1 (Days 1–5): Core Loop**
 - Core scripts: `Config`, `GameManager`, `EnemySpawner`, `RoundManager`, `ClientMain`, `BanHammerScript`, `CurrencyManager`
-- Server health system + game over (`SERVER DEAD`)
-- Two enemy types: `Troll` (slow/tank) and `Spammer` (fast/weak)
-- Wave system with difficulty scaling (+3 enemies, ×1.15 speed per wave)
-- Ban Hammer tool with server-side validation, works on all `IsEnemy` parts
-- Currency awarded on ban, player attributes replicate coin/upgrade state
-- First upgrade: Faster Ban Hammer (3 levels, 50/100/150 coins, −0.1s cooldown each)
-- UI: health label (top-center), coin counter (top-left), upgrade button (top-right)
+- Map (Studio-only, not in Rojo tree — see `state.md`): `EnemyStart`, `ServerZone`
+- Server health, game over (`SERVER DEAD`), win condition (`WAVES_TO_WIN = 5`, `VICTORY`), `IsGameOver()` covers both
+- Wave system + scaling (+3 enemies, ×1.15 speed per wave, 8s break, `Config.PRE_WAVE_DELAY = 2` for wave-1 race)
+- Two enemy types (Troll, Spammer), `IsEnemy` + `Reward` attribute pattern
+- Ban Hammer with server-side validation
+- Currency via Player attributes, first upgrade: Faster Ban Hammer (L1–3)
+- UI scaffolding (health label, coin counter, wave label, upgrade button)
 
-**Next up (Day 5)**
-- Visible wave counter + between-wave countdown (`Wave X / Y`, `Wave 3 in 5s`)
-- Win condition — survive `WAVES_TO_WIN` waves and the game declares victory
-- `GameWon` broadcast + VICTORY end state (parallel to existing SERVER DEAD path)
+**Done — Phase 2 (Days 6–12): Game Feel**
+- **Day 6:** `Effects.lua` module — ban particles, `+N` coin popup, ban sound, `Debris:AddItem` cleanup
+- **Day 7:** `HitFlash`, `Humanoid.CameraOffset` camera shake, swing animation, visible 3D hammer (Handle + Head + weld)
+- **Day 8:** full moderation toolkit — Mute Gun (slow), Timeout Card (freeze), Kick Boot (AOE forward-cone knockback). Status priority ladder `Kick > Timeout > Mute > seek` in `EnemySpawner` heartbeat. Hotbar PNG icons (`Tool.TextureId`, Studio-only)
+- **Day 9:** Teleporter enemy (warps every 2s; Mute slips through, Timeout blocks); Kick aim fix (client-camera vector with server validation — documented exception to server-authoritative)
+- **Day 10:** Splitter enemy + distinct `SplitterChild` type (no recursion by construction); `Effects.SplitEffect`
+- **Day 11:** UI polish v1 — health bar (Frame with `Fill`/`Label`, color thresholds 60/30%), live wave count + "N left" via single `EnemyCountChanged` event, cooldown panel reading `<Tool>ReadyAt` attributes per-frame
+- **Day 12 close (Apr 25 → May 1):** `FlashOverlay` full-screen red/green flash on `gameOver`/`gameWon`; brand rebrand (`Theme.lua`, yellow/black HUD + Watermark); recording-session polish — `Effects` shockwave + `PointLight` on Ban/Kick/Mute/Timeout, `BanHammer` shake bumped to 0.30s / 0.75 magnitude, `HitFlash` cut 0.15s → 0.08s
 
-**Milestone target:** closing Phase 1 — the "wave survived → next wave → finish line" loop.
+**Next up — Phase 3 (Days 13–18): Retention**
+- **Day 13–14:** upgrade tree expansion (beyond Faster Ban Hammer), persistent upgrades (first real DataStore work — design read/write model before building), per-tool upgrades
+- **Day 15:** random waves + modifiers ("Spam Storm", "Toxic Wave")
+- **Day 16–17:** XP / player levels / unlock new tools
+- **Day 18:** restart flow, retry button, full game-over screen
+
+**Milestone target:** addictive enough to replay between sessions.
 
 ---
 
@@ -245,39 +256,39 @@ Goal: **Ship it.**
 **Core Systems**
 - [x] Project setup
 - [x] Map
-- [ ] Enemy spawning
-- [ ] Enemy movement
-- [ ] Server health
-- [ ] Game over
+- [x] Enemy spawning
+- [x] Enemy movement
+- [x] Server health
+- [x] Game over (loss + win both flow through `IsGameOver()`)
 
 **Gameplay**
-- [ ] Multiple enemy types
-- [ ] Weapons/tools (Ban Hammer, Mute Gun, Timeout, Kick)
-- [ ] Round system
-- [ ] Difficulty scaling
+- [x] Multiple enemy types (Troll, Spammer, Teleporter, Splitter + SplitterChild)
+- [x] Weapons/tools (Ban Hammer, Mute Gun, Timeout Card, Kick Boot)
+- [x] Round system
+- [x] Difficulty scaling
 
 **Progression**
-- [ ] Currency
-- [ ] Shop
-- [ ] Upgrades
-- [ ] XP / levels
+- [x] Currency (coins via Player attributes, data-driven `Reward` per enemy)
+- [x] Shop (upgrade button — single item; catalog expands Day 13–14)
+- [x] Upgrades (Faster Ban Hammer L1–3; tree expansion is Phase 3)
+- [ ] XP / levels — Phase 3 (Day 16–17)
 
 **UI**
-- [ ] Health display
-- [ ] Round UI
-- [ ] Currency UI
-- [ ] Game over screen
+- [x] Health display (Frame + `Fill`/`Label` bar, 60/30% color thresholds)
+- [x] Round UI (`WaveLabel` — "Wave X / Y", "in Ns", VICTORY, Run ended)
+- [x] Currency UI (top-left coin counter + `+N` popups via `Effects.BanEffect`)
+- [ ] Game over screen — `FlashOverlay` covers run-end flash, but full screen + retry button is Day 18
 
 **Polish**
-- [ ] Hit effects
-- [ ] Sounds
-- [ ] Visual improvements
+- [x] Hit effects (`HitFlash`, `BanEffect`/`MuteEffect`/`TimeoutEffect`/`KickEffect`/`SplitEffect`/`TeleportEffect`, shockwaves + lights)
+- [x] Sounds (ban, mute, timeout, kick, split, teleport — all Config-driven asset IDs)
+- [x] Visual improvements (camera shake, swing anim, visible 3D hammer, hotbar icons, `FlashOverlay`, brand rebrand)
 
-**Monetization**
+**Monetization** — Phase 4 (Days 19–22)
 - [ ] Gamepasses
 - [ ] Dev products
 
-**Launch**
+**Launch** — Phase 6 (Days 28–30)
 - [ ] Icon
 - [ ] Thumbnail
 - [ ] Description
