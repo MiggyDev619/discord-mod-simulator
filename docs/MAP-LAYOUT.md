@@ -2,7 +2,21 @@
 
 Map polish placement spec for Phase 5 Day 23. Map geometry lives in Studio (Workspace is intentionally NOT in the Rojo tree per `state.md` §2). This doc is the source-of-truth recipe so it can be rebuilt if the place file is ever lost.
 
-**Run ONCE.** The Lua script below is a Studio command-bar one-shot that reads your existing `EnemyStart` and `ServerZone` parts and creates the polish geometry around them. Idempotent — safe to re-run if you tweak the script and want to redo it (it deletes any existing polish parts named with the `MapPolish_` prefix and recreates them).
+## Quick re-run (preferred)
+
+The polish logic lives in `src/ServerScriptService/MapPolish.lua` — a ModuleScript that ships with the project via Rojo. From Studio command bar, one-line invocation:
+
+```lua
+require(game.ServerScriptService.MapPolish).Apply()
+```
+
+That works any time `rojo serve` is connected (or once you've published the place — the module is included in builds). Idempotent — clears prior `MapPolish_`-prefixed parts before recreating, and re-applies the recolors to Baseplate / EnemyStart / ServerZone / SpawnLocation each call.
+
+`MapPolish.Apply()` no-ops outside Studio (refuses to run in production) so it can never accidentally modify the live map.
+
+**Use the inline script below only as a fallback** — if for some reason the module isn't loaded (no `rojo serve`, place file out of date, etc.), the inline version is the same logic copy-pasted.
+
+---
 
 ---
 
