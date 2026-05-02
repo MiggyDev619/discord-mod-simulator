@@ -127,10 +127,13 @@ Config.COMBO_MULTIPLIER      = 2
 -- Tool unlocks: Mute Gun, Timeout Card, Kick Boot are locked at start. Players
 -- buy them from the upgrade panel. Ban Hammer is always granted via StarterPack.
 -- toolName matches the folder name in ReplicatedStorage/Tools/.
+-- Costs bumped 50% in Day 21-22 balance pass to give the Starter Pack
+-- gamepass (499 R$ for all 3 + 500 coins) a meaningful coin-grind alternative.
+-- Old: 100/150/200. New: 150/225/300. Total all 3: 675 (was 450).
 Config.TOOL_UNLOCKS = {
-	{ key = "MuteGun",     toolName = "MuteGun",     label = "Unlock Mute Gun",     cost = 100 },
-	{ key = "KickBoot",    toolName = "KickBoot",    label = "Unlock Kick Boot",    cost = 150 },
-	{ key = "TimeoutCard", toolName = "TimeoutCard", label = "Unlock Timeout Card", cost = 200 },
+	{ key = "MuteGun",     toolName = "MuteGun",     label = "Unlock Mute Gun",     cost = 150 },
+	{ key = "KickBoot",    toolName = "KickBoot",    label = "Unlock Kick Boot",    cost = 225 },
+	{ key = "TimeoutCard", toolName = "TimeoutCard", label = "Unlock Timeout Card", cost = 300 },
 }
 
 -- Upgrades (per-tool cooldown reductions). Each tool's LocalScript reads its
