@@ -12,6 +12,61 @@ Raw build notes for the Discord Mod Simulator Roblox project, structured for a d
 
 ---
 
+## 2026-05-02 — Days 19–22 / Phase 4 close (Monetization)
+
+> Same-day continuation after the Phase 3 close. Built end-to-end gamepass + dev product systems against placeholder Roblox asset IDs (user creates the actual passes/products on Creator Hub per `docs/USER-ACTIONS.md`). 4 commits: Day 19 (gamepasses) → Day 20 (dev products + Shop UI) → Day 21-22 (balance) → this close.
+
+### What "Phase 4 closed" means against `plan.md` §7
+
+| Phase 4 scope (Days 19–22) | Status |
+|---|---|
+| Gamepasses (Double Coins, Faster Cooldown) (Day 19) | ✓ — 3 passes shipped (added Starter Pack as the third). `GamepassManager` checks ownership + handles mid-session purchases. Effects wired into `CurrencyManager.AddCoins` and `effectiveCooldownForLevel`. |
+| Dev Products (Instant Revive, Boosts) (Day 20) | ✓ — 4 products. `ProductHandler` owns `ProcessReceipt` with idempotent retry semantics. `GameManager.Heal` added for Revive. New Shop UI with mutex-toggled UpgradePanel coexistence. |
+| Balance economy, fix exploits (Days 21-22) | ✓ tool unlock costs bumped 50% to make Starter Pack worthwhile. ✗ exploit hunting (server-side validation already covers destructive actions; non-destructive cooldown bypass is low-impact). No coin cap (run length self-limits). |
+
+### Decisions made (and why)
+
+- **Placeholder IDs (`id = 0`) instead of asking the user to pause for Creator Hub work mid-build.** Each `Config.GAMEPASSES` and `Config.DEV_PRODUCTS` entry has a TODO. Code guards on `id == 0` (purchase prompt prints to Output instead of erroring; ownership check returns false). User can hot-swap IDs later via `docs/USER-ACTIONS.md` §B/§C. Keeps the autonomous run unblocked.
+- **Starter Pack as the 3rd gamepass.** Original §7 plan said "Double Coins, Faster Cooldown, etc." — I added Starter Pack as the third because it's the quintessential "skip the grind" pass, gives the Day 21-22 balance pass something concrete to balance against (bumping unlock costs gives the pass real ROI), AND tests the more complex one-time-grant path (`StarterPackClaimed` persistent attribute). The other two are pure passive multipliers.
+- **Cooldown floor preserved past gamepass multiplier.** `effectiveCooldownForLevel` clamps to `upg.minValue` AFTER applying the FasterCooldowns ×0.7. Otherwise the pass + level 3 upgrade could push Ban cooldown to 0.07s (below the 0.1s balanced floor). Pass is "faster," not "instant."
+- **Double Coins gamepass DOES double Coin Pack purchases.** A player who owns Double Coins and buys a Coin Pack Large gets 1000 coins instead of 500. Could be argued exploit-y (paying R$ to amplify R$). Going with intentional for v1 — "doubles every coin source" is a clean rule. If economy data shows this matters, gate later.
+- **`ProcessReceipt` returns NotProcessedYet on any failure (no player, unknown product, handler error).** Roblox retries; receipt eventually grants or expires. No homegrown dedup table — Roblox handles R$ idempotency on their side.
+- **XP Boost replaces existing duration, doesn't stack.** Buying two boosts in a row resets to 10 minutes from now. Stacking would let a whale skip half the leveling curve in one transaction; replacement caps the value-per-purchase.
+- **Shop + Upgrades panels share the same screen slot (top-right, y=108).** Mutex toggle: opening one closes the other. Cleaner than two-tab UI for now; revisit if either panel grows past ~10 rows.
+- **Schema v5 with v4→v5 migration.** Only `starterPackClaimed` persists from the gamepass system (ownership is queried fresh per join — Roblox is the source of truth, no cache divergence risk). XP Boost timestamp NOT persisted (mid-boost disconnect = lost boost; Phase 5 polish if it becomes a complaint).
+- **No new `RewardForKill` or `effectiveCooldownForLevel` arguments — gamepass effects via Player attribute reads.** Same pattern as Day 14.5's combo check (`FrozenUntil` / `MuteFrozenUntil`). Adding a multiplier doesn't propagate through every callsite — just one helper does the lookup. Pays off again now.
+
+### Phase 4 by the numbers
+
+- 4 commits: `f227520` (Day 19) → `8541c73` (Day 20) → `ff5f514` (Day 21-22) → this close.
+- New files: `GamepassManager.server.lua`, `ProductHandler.server.lua`, `ShopButton.model.json`, `ShopPanel.model.json`. Plus `docs/USER-ACTIONS.md` (the runbook for everything Claude can't do).
+- New `Config` keys: `GAMEPASSES` (3 entries), `DOUBLE_COINS_MULT`, `FASTER_COOLDOWNS_MULT`, `STARTER_PACK_COIN_GRANT`, `DEV_PRODUCTS` (4 entries), `XP_BOOST_MULT`. Tool unlock costs updated.
+- New player attributes: `DoubleCoinsOwned`, `FasterCooldownsOwned`, `StarterPackOwned`, `StarterPackClaimed` (persisted), `XpBoostUntil`.
+- Schema v4 → v5. Migration grandfathers `starterPackClaimed = false` for any v4 player.
+- Test cycles: 0 in-Studio (autonomous run; user verifies post-batch). Build verified clean across all commits.
+
+### What's intentionally not built yet
+
+- **Real Creator Hub IDs.** All 7 monetization items use `id = 0`. User MUST create them per `docs/USER-ACTIONS.md` §B + §C and paste the IDs into `Config.lua` before any R$ flow works. Code is purchase-ready; data is not.
+- **Gamepass purchase confirmation modal.** The Roblox built-in "purchase succeeded" prompt is the only confirmation right now. A custom in-game modal ("You bought Double Coins! Effect active.") is queued for Day 23-24 UI cleanup.
+- **Fancy gamepass icons.** No 512×512 icons uploaded — Roblox shows a placeholder grid icon in the purchase prompt. User can upload via Creator Hub when creating each pass (optional but improves conversion).
+- **No anti-exploit beyond existing server-side validation.** Non-destructive tool spam isn't worth chasing. Mute Gun second-hit destroy IS server-validated (range + cooldown + IsEnemy check). Phase 6 launch can revisit if real players surface anything weird.
+
+### Blockers for next session (Phase 5)
+
+- **Phase 5 starts with map work that's Studio-only** (Workspace not in Rojo). Day 23 will produce `docs/MAP-LAYOUT.md` as a spec; user executes it manually in Studio per `USER-ACTIONS.md` §E.
+- **Touch controls land in Day 23-24** but real-device verification is on the user (per §G). Tablet/Phone stay disabled in Game Settings until user confirms.
+- **Working tree clean.** 21 commits ahead of `origin/main`, never pushed by intent.
+
+### Hooks for the post
+
+- **"Player attributes carried 4 features without one new RemoteEvent."** Combo (`FrozenUntil`/`MuteFrozenUntil`), tool unlocks (`<Tool>Unlocked`), gamepasses (`<Pass>Owned`), XP boost (`XpBoostUntil`) — all check player attributes, all replicate server→client automatically. The Day 4 lesson ("Player attributes replace half your RemoteEvents") just keeps paying.
+- **"Code-ready, data-not-ready."** Phase 4 ships an entire monetization stack with `id = 0` placeholders that no-op gracefully. Code is correct, prompts won't fire until IDs land. Lets the build run autonomously and decouples the implementation from the Creator Hub UI work that has to happen in a browser tab.
+- **"Don't double-dip-prevent until you have data."** Double Coins ×2 on Coin Pack purchases is a thing. Could be an exploit, could be the gamepass living up to its name. Easy to gate later (one `if dp.skipMultiplier` flag), expensive to add THEN remove if it turns out fine. Default to permissive, gate when proven.
+- **"Effects via attributes scale linearly."** When the design called for a 4th passive multiplier (XP Boost on top of combo + Double Coins + Faster Cooldowns), it was 1 attribute, 1 helper edit. Compare to threading a new arg through `RewardForKill` callsites — would have been a multi-file refactor. Attributes are cheaper than function signatures when the dimension matters globally.
+
+---
+
 ## 2026-05-02 — Days 13–18 / Phase 3 close (Retention)
 
 > Single-day push through all of Phase 3 — Days 13 through 18 plus a Day 14.5 detour that wasn't on the original 30-day plan. Six commits ahead of the Phase 2 close, finishing on commit `ce79754`. Game now persists per-player progression across sessions, has 3 tool-unlock gates, 3 wave modifiers, an XP / level system, and a working restart loop with stats screen.

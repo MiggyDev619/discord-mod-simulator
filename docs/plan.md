@@ -27,9 +27,9 @@
 
 ## 2. Where You Are Right Now
 
-**Day:** 18 (Phase 3 closed)
-**Phase:** 3 — Retention · CLOSED
-**Next phase:** 4 — Monetization (Days 19–22)
+**Day:** 22 (Phase 4 closed)
+**Phase:** 4 — Monetization · CLOSED
+**Next phase:** 5 — Polish + Viral (Days 23–27)
 
 > See `DEVLOG-NOTES.md` for per-session details. This is the at-a-glance state.
 
@@ -60,12 +60,17 @@
 - **Day 16–17:** XP + player levels — `CurrencyManager.AddXp` from `RewardForKill` (XP = base reward, NOT combo'd), per-level requirement `level * 100`, cap 25. Schema v4. CurrencyLabel renders `Lv N · Coins: M`.
 - **Day 18:** Restart flow — `GameManager.Reset`, `EnemySpawner.ClearAll`, RoundManager re-runnable via `startRun()`, new `RetryRun` RemoteEvent, `GameOverPanel` modal with stats (waves survived, run coins, level) + Retry button. `RunCoinsEarned` per-run tracker (NOT persisted).
 
-**Next up — Phase 4 (Days 19–22): Monetization**
-- **Day 19:** Gamepasses (Double Coins, Faster Cooldown, etc.). Real-money decisions — design pricing before coding.
-- **Day 20:** Dev Products (Instant Revive, Coin Boosts).
-- **Day 21–22:** Balance pass (catch any economy exploits, tune costs against actual play data).
+**Done — Phase 4 (Days 19–22): Monetization**
+- **Day 19:** Gamepasses — `Config.GAMEPASSES` table with 3 passes (Double Coins 199 R$, Faster Cooldowns 299 R$, Starter Pack 499 R$). New `GamepassManager.server.lua` checks ownership via `MarketplaceService:UserOwnsGamePassAsync`, sets `<Pass>Owned` attributes, listens for `PromptGamePassPurchaseFinished` for mid-session activation. Effects wired into `CurrencyManager.AddCoins` (DoubleCoins ×2) and `effectiveCooldownForLevel` (FasterCooldowns ×0.7, floor preserved). Starter Pack one-time grant gated by `StarterPackClaimed` (persisted, schema v5).
+- **Day 20:** Dev Products — `Config.DEV_PRODUCTS` table with 4 consumables (Instant Revive 99, Coin Pack Small 49, Coin Pack Large 199, XP Boost 99). New `ProductHandler.server.lua` owns `MarketplaceService.ProcessReceipt` with per-key handlers + idempotent retry semantics. New `GameManager.Heal` for the Revive path. New `ShopButton` + `ShopPanel` UI (mutex-toggled with UpgradePanel — both anchored top-right at y=108). `XpBoostUntil` attribute drives `AddXp` 2× multiplier during boost window.
+- **Day 21–22:** Balance pass — tool unlock costs bumped 50% (MuteGun 100→150, KickBoot 150→225, TimeoutCard 200→300) so the Starter Pack gamepass is a meaningful time-saver. No other balance changes (playtest data not yet there).
 
-**Milestone target:** game can earn money. Publishing workflow already proven (Day 13).
+**Next up — Phase 5 (Days 23–27): Polish + Viral**
+- **Day 23–24:** Better map (themed boundary walls, server tower, moderator's desk — Studio-side, see `docs/MAP-LAYOUT.md`), lighting recipe (see `docs/USER-ACTIONS.md` §F), UI cleanup (custom hotbar, cooldown sweep, tooltips, settings menu, gamepass confirm modal), touch controls (tap-to-target + virtual KICK button + responsive HUD).
+- **Day 25:** Meme enemies (Karen, Furry, Discord Mod) + chat bubble system + "you got banned lol" popups.
+- **Day 26–27:** Multiplayer polish (leaderstats, server-side tracer replication for Mute Gun shots).
+
+**Milestone target:** clippable, shareable, plays well with friends. After Phase 5: Phase 6 launch (Days 28–30).
 
 ---
 
@@ -292,9 +297,9 @@ Goal: **Ship it.**
 - [x] Sounds (ban, mute, timeout, kick, split, teleport — all Config-driven asset IDs)
 - [x] Visual improvements (camera shake, swing anim, visible 3D hammer, hotbar icons, `FlashOverlay`, brand rebrand)
 
-**Monetization** — Phase 4 (Days 19–22)
-- [ ] Gamepasses
-- [ ] Dev products
+**Monetization**
+- [x] Gamepasses (Double Coins 199 R$, Faster Cooldowns 299 R$, Starter Pack 499 R$ — IDs are placeholders until user creates them on Creator Hub per `docs/USER-ACTIONS.md` §B)
+- [x] Dev products (Instant Revive 99 R$, Coin Pack Small 49 R$, Coin Pack Large 199 R$, XP Boost 99 R$ — IDs same caveat per §C)
 
 **Launch** — Phase 6 (Days 28–30)
 - [ ] Icon
