@@ -2,7 +2,7 @@
   "className": "Frame",
   "properties": {
     "Size": {"UDim2": [[0, 360], [0, 0]]},
-    "Position": {"UDim2": [[1, -12], [0, 156]]},
+    "Position": {"UDim2": [[1, -12], [0, 204]]},
     "AnchorPoint": {"Vector2": [1, 0]},
     "BackgroundColor3": [0.0353, 0.0353, 0.0431],
     "BackgroundTransparency": 0.05,

@@ -64,6 +64,10 @@
     {
       "name": "ChooseMode",
       "className": "RemoteEvent"
+    },
+    {
+      "name": "GetLeaderboard",
+      "className": "RemoteFunction"
     }
   ]
 }

@@ -28,6 +28,7 @@ local enemyCountChanged  = remotes:WaitForChild("EnemyCountChanged")
 local retryRun           = remotes:WaitForChild("RetryRun")
 local muteShotFx         = remotes:WaitForChild("MuteShotFx")
 local cosmeticAction     = remotes:WaitForChild("CosmeticAction")
+local getLeaderboardRf   = remotes:WaitForChild("GetLeaderboard")
 
 local player        = Players.LocalPlayer
 local playerGui     = player:WaitForChild("PlayerGui")
@@ -58,6 +59,8 @@ local shopButton       = strictChild(mainUI, "ShopButton")
 local shopPanel        = strictChild(mainUI, "ShopPanel")
 local cosmeticsButton  = strictChild(mainUI, "CosmeticsButton")
 local cosmeticsPanel   = strictChild(mainUI, "CosmeticsPanel")
+local leaderboardButton = strictChild(mainUI, "LeaderboardButton")
+local leaderboardPanel  = strictChild(mainUI, "LeaderboardPanel")
 local cooldownPanel = strictChild(mainUI, "CooldownPanel")
 local flashOverlay  = strictChild(mainUI, "FlashOverlay")
 local gameOverPanel = strictChild(mainUI, "GameOverPanel")
@@ -430,13 +433,14 @@ for i, upg in ipairs(Config.COOLDOWN_UPGRADES) do
 	end
 end
 
--- Mutex toggle: only one of (UpgradePanel, ShopPanel, CosmeticsPanel) visible
--- at a time so they don't overlap (Upgrade + Shop anchor at y=108; Cosmetics
--- at y=156). v2 Week 2 added Cosmetics into the rotation.
+-- Mutex toggle: only one of (UpgradePanel, ShopPanel, CosmeticsPanel,
+-- LeaderboardPanel) visible at a time. All panels anchor at y=204 to clear
+-- the 4-button vertical stack (Upgrades / Shop / Cosmetics / Leaderboard).
 local function closeAllPanels()
-	upgradePanel.Visible   = false
-	shopPanel.Visible      = false
-	cosmeticsPanel.Visible = false
+	upgradePanel.Visible     = false
+	shopPanel.Visible        = false
+	cosmeticsPanel.Visible   = false
+	leaderboardPanel.Visible = false
 end
 
 upgradeButton.MouseButton1Click:Connect(function()
@@ -455,6 +459,75 @@ cosmeticsButton.MouseButton1Click:Connect(function()
 	local wasVisible = cosmeticsPanel.Visible
 	closeAllPanels()
 	cosmeticsPanel.Visible = not wasVisible
+end)
+
+-- v2 Week 4: leaderboard button — fetches top players via GetLeaderboard
+-- RemoteFunction on open. Refreshes each time the panel is opened.
+leaderboardButton.MouseButton1Click:Connect(function()
+	local wasVisible = leaderboardPanel.Visible
+	closeAllPanels()
+	if not wasVisible then
+		leaderboardPanel.Visible = true
+		-- Clear any prior rows + show "Loading..."
+		for _, child in ipairs(leaderboardPanel:GetChildren()) do
+			if child:IsA("TextLabel") or child:IsA("Frame") then child:Destroy() end
+		end
+		local loading = Instance.new("TextLabel")
+		loading.Size                   = UDim2.new(1, 0, 0, 32)
+		loading.BackgroundTransparency = 1
+		loading.Text                   = "Loading top players..."
+		loading.TextColor3             = Color3.fromRGB(180, 180, 200)
+		loading.Font                   = Enum.Font.Gotham
+		loading.TextSize               = 14
+		loading.LayoutOrder            = 1
+		loading.ZIndex                 = 51
+		loading.Parent                 = leaderboardPanel
+
+		task.spawn(function()
+			local ok, results = pcall(function() return getLeaderboardRf:InvokeServer("Coins") end)
+			loading:Destroy()
+
+			-- Section header
+			local header = Instance.new("TextLabel")
+			header.Size                   = UDim2.new(1, 0, 0, 28)
+			header.BackgroundTransparency = 1
+			header.Text                   = "TOP PLAYERS BY COINS"
+			header.TextColor3             = Color3.fromRGB(80, 180, 240)
+			header.Font                   = Enum.Font.GothamBold
+			header.TextSize               = 14
+			header.TextXAlignment         = Enum.TextXAlignment.Left
+			header.LayoutOrder            = 1
+			header.ZIndex                 = 51
+			header.Parent                 = leaderboardPanel
+
+			if not ok or not results or #results == 0 then
+				local empty = Instance.new("TextLabel")
+				empty.Size                   = UDim2.new(1, 0, 0, 28)
+				empty.BackgroundTransparency = 1
+				empty.Text                   = "(no players ranked yet)"
+				empty.TextColor3             = Color3.fromRGB(140, 140, 140)
+				empty.Font                   = Enum.Font.Gotham
+				empty.TextSize               = 12
+				empty.LayoutOrder            = 2
+				empty.ZIndex                 = 51
+				empty.Parent                 = leaderboardPanel
+			else
+				for i, entry in ipairs(results) do
+					local row = Instance.new("TextLabel")
+					row.Size                   = UDim2.new(1, 0, 0, 26)
+					row.BackgroundTransparency = 1
+					row.Text                   = string.format("%d. %s — %d coins", i, entry.name, entry.value)
+					row.TextColor3             = Color3.fromRGB(250, 250, 250)
+					row.Font                   = Enum.Font.Gotham
+					row.TextSize               = 14
+					row.TextXAlignment         = Enum.TextXAlignment.Left
+					row.LayoutOrder            = i + 1
+					row.ZIndex                 = 51
+					row.Parent                 = leaderboardPanel
+				end
+			end
+		end)
+	end
 end)
 
 -- Shop rows: gamepasses + dev products. Each row has a label, a description

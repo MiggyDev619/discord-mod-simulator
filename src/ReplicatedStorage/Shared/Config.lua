@@ -284,7 +284,28 @@ Config.GAMEPASSES = {
 		price       = 499,
 		effectAttr  = "StarterPackOwned",
 	},
+	-- v2 Week 4: Donator tier — cosmetic + small stat boost, no pay-to-win.
+	{
+		key         = "Donator",
+		id          = 0,  -- TODO: replace with real gamepass id (USER-ACTIONS V2 §A)
+		label       = "Donator",
+		description = "Exclusive rainbow trail + chat badge + 5% coin bonus.",
+		price       = 99,
+		effectAttr  = "DonatorOwned",
+	},
+	{
+		key         = "DonatorPlus",
+		id          = 0,  -- TODO: replace with real gamepass id (USER-ACTIONS V2 §A)
+		label       = "Donator+",
+		description = "All Donator perks + Golden Wumpus pet + Gold skin + 10% coin bonus.",
+		price       = 299,
+		effectAttr  = "DonatorPlusOwned",
+	},
 }
+
+-- Donator coin bonuses (additive on top of Double Coins gamepass + CoinFrenzy).
+Config.DONATOR_COIN_BONUS      = 0.05   -- +5% coins
+Config.DONATOR_PLUS_COIN_BONUS = 0.10   -- +10% coins (replaces Donator bonus, doesn't stack)
 
 -- Effect tunables for gamepasses
 Config.DOUBLE_COINS_MULT       = 2     -- multiplier for AddCoins when DoubleCoinsOwned

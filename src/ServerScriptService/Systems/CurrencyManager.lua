@@ -88,6 +88,13 @@ function CurrencyManager.AddCoins(player, amount)
 		if waveMult and waveMult > 1 then
 			amount = amount * waveMult
 		end
+		-- v2 Week 4: Donator-tier coin bonus. Donator+ replaces Donator (not
+		-- additive). Applied last so it stacks multiplicatively on top.
+		if player:GetAttribute("DonatorPlusOwned") then
+			amount = amount * (1 + Config.DONATOR_PLUS_COIN_BONUS)
+		elseif player:GetAttribute("DonatorOwned") then
+			amount = amount * (1 + Config.DONATOR_COIN_BONUS)
+		end
 	end
 	local coins = (player:GetAttribute("Coins") or 0) + amount
 	player:SetAttribute("Coins", coins)
