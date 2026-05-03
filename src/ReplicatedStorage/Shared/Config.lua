@@ -230,7 +230,7 @@ Config.XP_MAX_LEVEL      = 25
 Config.GAMEPASSES = {
 	{
 		key         = "DoubleCoins",
-		id          = 0,  -- TODO: replace with real gamepass id
+		id          = 1821265152,
 		label       = "Double Coins",
 		description = "Earn 2× coins from every kill, forever.",
 		price       = 199,
@@ -238,7 +238,7 @@ Config.GAMEPASSES = {
 	},
 	{
 		key         = "FasterCooldowns",
-		id          = 0,  -- TODO: replace with real gamepass id
+		id          = 1821712677,
 		label       = "Faster Cooldowns",
 		description = "All tools cool down 30% faster. Stacks with cooldown upgrades.",
 		price       = 299,
@@ -246,7 +246,7 @@ Config.GAMEPASSES = {
 	},
 	{
 		key         = "StarterPack",
-		id          = 0,  -- TODO: replace with real gamepass id
+		id          = 1821424911,
 		label       = "Starter Pack",
 		description = "Skip the early grind: all tool unlocks + 500 coins.",
 		price       = 499,
@@ -264,14 +264,14 @@ Config.STARTER_PACK_COIN_GRANT = 500   -- one-time coin grant on first claim
 Config.DEV_PRODUCTS = {
 	{
 		key         = "InstantRevive",
-		id          = 0,  -- TODO: replace with real product id
+		id          = 3585511453,
 		label       = "Instant Revive",
 		description = "Restore your server's health to full mid-run.",
 		price       = 99,
 	},
 	{
 		key         = "CoinPackSmall",
-		id          = 0,  -- TODO: replace with real product id
+		id          = 3585512509,
 		label       = "Coin Pack — Small",
 		description = "+100 coins instantly.",
 		price       = 49,
@@ -279,7 +279,7 @@ Config.DEV_PRODUCTS = {
 	},
 	{
 		key         = "CoinPackLarge",
-		id          = 0,  -- TODO: replace with real product id
+		id          = 3585516007,
 		label       = "Coin Pack — Large",
 		description = "+500 coins instantly.",
 		price       = 199,
@@ -287,7 +287,7 @@ Config.DEV_PRODUCTS = {
 	},
 	{
 		key         = "XpBoost",
-		id          = 0,  -- TODO: replace with real product id
+		id          = 3585516209,
 		label       = "XP Boost (10 min)",
 		description = "Earn 2× XP for the next 10 minutes.",
 		price       = 99,
