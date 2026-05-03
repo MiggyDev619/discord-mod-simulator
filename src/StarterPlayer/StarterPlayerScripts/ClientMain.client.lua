@@ -29,6 +29,7 @@ local retryRun           = remotes:WaitForChild("RetryRun")
 local muteShotFx         = remotes:WaitForChild("MuteShotFx")
 local cosmeticAction     = remotes:WaitForChild("CosmeticAction")
 local getLeaderboardRf   = remotes:WaitForChild("GetLeaderboard")
+local chooseModeRemote   = remotes:WaitForChild("ChooseMode")
 
 local player        = Players.LocalPlayer
 local playerGui     = player:WaitForChild("PlayerGui")
@@ -61,6 +62,10 @@ local cosmeticsButton  = strictChild(mainUI, "CosmeticsButton")
 local cosmeticsPanel   = strictChild(mainUI, "CosmeticsPanel")
 local leaderboardButton = strictChild(mainUI, "LeaderboardButton")
 local leaderboardPanel  = strictChild(mainUI, "LeaderboardPanel")
+local lobbyPanel        = strictChild(mainUI, "LobbyPanel")
+local lobbyLane         = strictChild(lobbyPanel, "LaneButton")
+local lobbyMaze         = strictChild(lobbyPanel, "MazeButton")
+local lobbyHardMode     = strictChild(lobbyPanel, "HardModeButton")
 local cooldownPanel = strictChild(mainUI, "CooldownPanel")
 local flashOverlay  = strictChild(mainUI, "FlashOverlay")
 local gameOverPanel = strictChild(mainUI, "GameOverPanel")
@@ -182,6 +187,41 @@ end)
 muteShotFx.OnClientEvent:Connect(function(shooter, muzzle, endPoint)
 	if shooter == player then return end
 	Effects.MuteTracer(muzzle, endPoint)
+end)
+
+-- v2 Week 5: Lobby panel — visible whenever workspace.CurrentMode is "" (the
+-- pre-run lobby state RoundManager publishes). Hides as soon as ANY player
+-- picks a mode (server flips CurrentMode on first ChooseMode fire).
+local hardModeOn = false
+
+local function refreshLobbyVisibility()
+	local mode = workspace:GetAttribute("CurrentMode")
+	lobbyPanel.Visible = (mode == nil or mode == "")
+end
+
+local function refreshHardModeButton()
+	lobbyHardMode.Text = hardModeOn
+		and "Hard Mode: ON  (enemies hurt you on touch — 2× coins)"
+		or  "Hard Mode: OFF (enemies hurt you on touch — 2× coins)"
+	lobbyHardMode.BackgroundColor3 = hardModeOn
+		and Color3.fromRGB(220, 80, 80)
+		or  Color3.fromRGB(60, 60, 65)
+end
+refreshHardModeButton()
+refreshLobbyVisibility()
+workspace:GetAttributeChangedSignal("CurrentMode"):Connect(refreshLobbyVisibility)
+
+lobbyHardMode.MouseButton1Click:Connect(function()
+	hardModeOn = not hardModeOn
+	refreshHardModeButton()
+end)
+
+lobbyLane.MouseButton1Click:Connect(function()
+	chooseModeRemote:FireServer("Lane", hardModeOn)
+end)
+
+lobbyMaze.MouseButton1Click:Connect(function()
+	chooseModeRemote:FireServer("Maze", hardModeOn)
 end)
 
 -- Retry button: clear local run-end state immediately so subsequent server

@@ -1,0 +1,116 @@
+{
+  "className": "Frame",
+  "properties": {
+    "Size": {"UDim2": [[0, 480], [0, 360]]},
+    "Position": {"UDim2": [[0.5, 0], [0.5, 0]]},
+    "AnchorPoint": {"Vector2": [0.5, 0.5]},
+    "BackgroundColor3": [0.0353, 0.0353, 0.0431],
+    "BackgroundTransparency": 0.05,
+    "BorderSizePixel": 0,
+    "Visible": false,
+    "ZIndex": 90
+  },
+  "children": [
+    { "className": "UICorner",  "properties": { "CornerRadius": {"UDim": [0, 12]} } },
+    {
+      "className": "UIStroke",
+      "properties": { "Color": [0.9804, 0.8, 0.0824], "Thickness": 2, "Transparency": 0.3 }
+    },
+    {
+      "className": "UIPadding",
+      "properties": {
+        "PaddingTop":    {"UDim": [0, 20]},
+        "PaddingBottom": {"UDim": [0, 20]},
+        "PaddingLeft":   {"UDim": [0, 24]},
+        "PaddingRight":  {"UDim": [0, 24]}
+      }
+    },
+    {
+      "name": "Title",
+      "className": "TextLabel",
+      "properties": {
+        "Size": {"UDim2": [[1, 0], [0, 44]]},
+        "Position": {"UDim2": [[0, 0], [0, 0]]},
+        "BackgroundTransparency": 1,
+        "Text": "CHOOSE MODE",
+        "TextColor3": [0.9804, 0.8, 0.0824],
+        "Font": "GothamBold",
+        "TextSize": 28,
+        "ZIndex": 91
+      }
+    },
+    {
+      "name": "LaneButton",
+      "className": "TextButton",
+      "properties": {
+        "Size": {"UDim2": [[1, 0], [0, 80]]},
+        "Position": {"UDim2": [[0, 0], [0, 60]]},
+        "BackgroundColor3": [0.9804, 0.8, 0.0824],
+        "BorderSizePixel": 0,
+        "Text": "LANE MODE\nClassic 10-wave defense",
+        "TextColor3": [0.0353, 0.0353, 0.0431],
+        "Font": "GothamBold",
+        "TextSize": 16,
+        "AutoButtonColor": true,
+        "ZIndex": 91
+      },
+      "children": [
+        { "className": "UICorner", "properties": { "CornerRadius": {"UDim": [0, 8]} } }
+      ]
+    },
+    {
+      "name": "MazeButton",
+      "className": "TextButton",
+      "properties": {
+        "Size": {"UDim2": [[1, 0], [0, 80]]},
+        "Position": {"UDim2": [[0, 0], [0, 152]]},
+        "BackgroundColor3": [0.6, 0.4, 0.85],
+        "BorderSizePixel": 0,
+        "Text": "MAZE MODE\nDefend center base from 4 sides",
+        "TextColor3": [0.98, 0.98, 0.98],
+        "Font": "GothamBold",
+        "TextSize": 16,
+        "AutoButtonColor": true,
+        "ZIndex": 91
+      },
+      "children": [
+        { "className": "UICorner", "properties": { "CornerRadius": {"UDim": [0, 8]} } }
+      ]
+    },
+    {
+      "name": "HardModeButton",
+      "className": "TextButton",
+      "properties": {
+        "Size": {"UDim2": [[1, 0], [0, 44]]},
+        "Position": {"UDim2": [[0, 0], [0, 244]]},
+        "BackgroundColor3": [0.3, 0.3, 0.35],
+        "BorderSizePixel": 0,
+        "Text": "Hard Mode: OFF (enemies hurt you on touch — 2× coins)",
+        "TextColor3": [0.98, 0.98, 0.98],
+        "Font": "Gotham",
+        "TextSize": 14,
+        "AutoButtonColor": true,
+        "ZIndex": 91
+      },
+      "children": [
+        { "className": "UICorner", "properties": { "CornerRadius": {"UDim": [0, 8]} } }
+      ]
+    },
+    {
+      "name": "Hint",
+      "className": "TextLabel",
+      "properties": {
+        "Size": {"UDim2": [[1, 0], [0, 22]]},
+        "Position": {"UDim2": [[0, 0], [1, -22]]},
+        "AnchorPoint": {"Vector2": [0, 1]},
+        "BackgroundTransparency": 1,
+        "Text": "Pick a mode to start. Maze/Hard land in v2 updates.",
+        "TextColor3": [0.55, 0.55, 0.6],
+        "Font": "Gotham",
+        "TextSize": 11,
+        "TextXAlignment": "Center",
+        "ZIndex": 91
+      }
+    }
+  ]
+}

@@ -16,6 +16,7 @@ local remotes     = Shared:WaitForChild("Remotes")
 local waveStarted = remotes:WaitForChild("WaveStarted")
 local waveBreak   = remotes:WaitForChild("WaveBreak")
 local retryRun    = remotes:WaitForChild("RetryRun")
+local chooseMode  = remotes:WaitForChild("ChooseMode")
 
 local spawnerScript      = ServerScriptService:WaitForChild("Enemies"):WaitForChild("EnemySpawner")
 local spawnFunc          = spawnerScript:WaitForChild("Spawn")
@@ -117,16 +118,42 @@ local function runBreak(nextWave, durationSec)
 	end
 end
 
+-- v2 Week 5: lobby phase before each run. RoundManager waits for ANY player
+-- to fire ChooseMode before starting waves. Mode (Lane/Maze) + HardMode flag
+-- are stored on workspace attributes so EnemySpawner + future maze code can
+-- read them without a require chain.
+local lobbyEvent = Instance.new("BindableEvent")  -- fires when mode is chosen
+
+chooseMode.OnServerEvent:Connect(function(player, modeKey, hardMode)
+	if workspace:GetAttribute("CurrentMode") ~= nil and workspace:GetAttribute("CurrentMode") ~= "" then
+		return  -- already chosen for this run
+	end
+	if modeKey ~= "Lane" and modeKey ~= "Maze" then return end
+	workspace:SetAttribute("CurrentMode",     modeKey)
+	workspace:SetAttribute("CurrentHardMode", hardMode == true)
+	print(string.format("[RoundManager] Mode chosen by %s: %s (hardMode=%s)",
+		player.Name, modeKey, tostring(hardMode == true)))
+	lobbyEvent:Fire()
+end)
+
 -- Per-run wave loop. Re-invokable on retry; the previous loop has already
--- exited by then because IsGameOver was true (it's how the loop ends), and
--- only after the player clicks Retry does GameManager.Reset clear the flag.
-local function startRun()
+-- exited by then because IsGameOver was true. v2 Week 5: now waits for a
+-- mode pick before running waves. On retry, REUSES the prior mode so players
+-- don't have to re-pick (back-to-lobby UX deferred).
+local function startRun(skipLobby)
 	task.spawn(function()
-		-- Tiny silent buffer so the first countdown fire isn't dropped on cold
-		-- client boot, then a visible START_COUNTDOWN_SECONDS-second countdown
-		-- before wave 1 (gives players time to check the shop / get oriented).
+		-- Lobby: wait for first ChooseMode event unless we're reusing the
+		-- prior mode (retry path).
+		if not skipLobby then
+			workspace:SetAttribute("CurrentMode",     "")
+			workspace:SetAttribute("CurrentHardMode", false)
+			print("[RoundManager] Entering lobby — waiting for mode pick")
+			lobbyEvent.Event:Wait()
+		end
+
 		task.wait(Config.PRE_WAVE_DELAY)
-		print(string.format("[RoundManager] Start countdown — wave 1 in %ds", Config.START_COUNTDOWN_SECONDS))
+		print(string.format("[RoundManager] Start countdown — wave 1 in %ds (mode=%s)",
+			Config.START_COUNTDOWN_SECONDS, workspace:GetAttribute("CurrentMode") or "Lane"))
 		runBreak(1, Config.START_COUNTDOWN_SECONDS)
 
 		local wave = 0
@@ -151,14 +178,10 @@ local function startRun()
 end
 
 task.spawn(function()
-	-- Wait for at least one player, then give their ClientMain time to mount its
-	-- OnClientEvent handlers. Without this, wave 1's WaveStarted/EnemyCountChanged
-	-- fire before the client has connected — events are dropped, the label keeps
-	-- the model.json default ("Wave 1 / 5") with no "N left" suffix until wave 2.
 	if #Players:GetPlayers() == 0 then
 		Players.PlayerAdded:Wait()
 	end
-	startRun()
+	startRun(false)  -- show lobby on first run
 end)
 
 retryRun.OnServerEvent:Connect(function(player)
@@ -171,5 +194,5 @@ retryRun.OnServerEvent:Connect(function(player)
 	clearAll:Invoke()
 	GameManager.Reset()
 	CurrencyManager.ResetRun(player)
-	startRun()
+	startRun(true)  -- reuse prior mode, skip lobby
 end)
