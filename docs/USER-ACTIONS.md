@@ -2,6 +2,27 @@
 
 Tasks that Claude can't do for you (Roblox Studio interactions, Creator Hub website work, real-device testing, git pushes). Each section says **when**, **why**, **steps**, and **how to verify**.
 
+## Live game
+
+**Public URL:** https://www.roblox.com/share?code=6b575d753764f741a2a25711acdc3a7b&type=ExperienceDetails&stamp=1777777909749
+
+Currently personal-use publishing tier (per Day 13 publish). To open to all ages: Identity verification + Age check + 2-Step verification + Premium subscription per Roblox's Publishing Permissions page. See §J for the Phase 6 launch path.
+
+## Status snapshot (2026-05-02)
+
+| Item | Status |
+|---|---|
+| Map polish script applied | ✓ done |
+| Lighting recipe applied | ✓ done |
+| Place published + updated | ✓ done (placeId baked, monetization items live on it) |
+| 3 gamepasses created on Creator Hub | ✓ done — IDs in Config |
+| 4 dev products created on Creator Hub | ✓ done — IDs in Config |
+| In-Studio R$ purchase test | ✓ done — monetization works |
+| Multiplayer test (Studio Local Server) | ⏳ in progress |
+| Real-device touch test (iPad/iPhone) | ⏳ pending |
+| First push to origin | ✓ done (37 commits, range `8e0ef77..e2edc05`) |
+| Phase 6 launch (icon, thumbnail, description, public release) | ⏳ pending design conversation |
+
 Index — quick reference:
 
 | Day / Phase | Action | Section |
@@ -40,6 +61,16 @@ Index — quick reference:
 
 ## §B — Creating gamepasses
 
+**Status: ✓ Done (2026-05-02).** All 3 gamepasses created on Creator Hub, IDs pasted into `Config.GAMEPASSES`. Steps below kept for reference / future regenerations.
+
+| Pass | Roblox ID |
+|---|---|
+| Double Coins | 1821265152 |
+| Faster Cooldowns | 1821712677 |
+| Starter Pack | 1821424911 |
+
+---
+
 **When:** Day 19, **before** you test gamepasses in Studio. One-time setup.
 
 **Why:** Gamepass IDs come from the Roblox Creator Hub website. The code references them via `Config.GAMEPASSES`, but the IDs are placeholder zeros until you create them and paste the real IDs in.
@@ -71,6 +102,17 @@ Should print a table with the pass info. If it errors with "Asset not found", th
 ---
 
 ## §C — Creating dev products
+
+**Status: ✓ Done (2026-05-02).** All 4 dev products created on Creator Hub, IDs pasted into `Config.DEV_PRODUCTS`. Steps below kept for reference.
+
+| Product | Roblox ID |
+|---|---|
+| Instant Revive | 3585511453 |
+| Coin Pack — Small | 3585512509 |
+| Coin Pack — Large | 3585516007 |
+| XP Boost (10 min) | 3585516209 |
+
+---
 
 **When:** Day 20, before testing dev products. One-time.
 
@@ -223,6 +265,10 @@ print(game:GetService("MarketplaceService"):GetProductInfo(YOUR_PRODUCT_ID, Enum
 ---
 
 ## §I — Pushing to origin
+
+**Status: ✓ First push done (2026-05-02).** 37 commits pushed (range `8e0ef77..e2edc05`). Subsequent pushes are just `git push` — tracking is set up.
+
+---
 
 **When:** Phase 5 close (after the Phase 5 close commit lands), or any time you want a remote backup.
 

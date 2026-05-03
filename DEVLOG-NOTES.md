@@ -12,6 +12,62 @@ Raw build notes for the Discord Mod Simulator Roblox project, structured for a d
 
 ---
 
+## 2026-05-02 — Post-Phase 5 stabilization + monetization wire-up + first push
+
+> Same calendar day as the Phase 5 close (and Phases 3 + 4 close). Fix-up + verification pass after all Phase 1-5 code shipped: map polish iterated to fix visual issues, real Roblox monetization IDs wired in, 5s visible start countdown added, GameOverPanel sync + Lua-scoping bugs fixed, **37 commits pushed to `origin/main`** (first push since project start at Day 1). Game is live at https://www.roblox.com/share?code=6b575d753764f741a2a25711acdc3a7b — personal-use publishing tier per Day 13, see `USER-ACTIONS.md` §J for Phase 6 launch path.
+
+### What got iterated / fixed
+
+**Map polish — 3 iterations.**
+- v1 yellow coping strips Z-fighting (embedded in wall top → coplanar surfaces flicker). Fixed in v2: lifted ABOVE the wall, made slightly wider for overhang/coping look.
+- User flagged map "looks basic" — grey baseplate + default green Spawn + blue ServerZone still vanilla Roblox. Lighting alone doesn't fix base geometry. v2 added recolors: Baseplate themed dark SmoothPlastic, EnemyStart warning-red Neon (translucent), ServerZone Discord blurple Neon (translucent), default SpawnLocation moved + recolored brand yellow.
+- User flagged spawn was on the WRONG side (enemy side, behind moderator's desk). Moved SpawnLocation to base side (behind ServerZone) so the player faces incoming enemies. Wumpus eye + pupil rotated 180° (`-laneDir` → `+laneDir`) to face the new spawn.
+- Decor expansion (the "feel more alive" Q&A pass): 4 decorative pillars (CanCollide so enemies physics-bounce around them — visual variety, no enemy-AI work), 5-part Wumpus statue (blurple body + head + white eye + black pupil + red beanie), empty side workstation (desk + chair + monitor with red ALERT screen — implies "off-duty coworkers" without NPC models), center lane Neon stripe (runway showing data path), floating blurple data-packet particles, runtime-script tower LED pulse (1.6s sine in/out).
+
+**Tooling — MapPolish ModuleScript.**
+User asked for a one-liner instead of pasting the full script every iteration. Extracted polish logic to `src/ServerScriptService/MapPolish.lua` (ModuleScript). Now: `require(game.ServerScriptService.MapPolish).Apply()`. IsStudio guard refuses to run in production. Tower LED animation script created via `Script.Source` assignment from command-bar context (relies on Studio script-edit permissions; would fail from a runtime script — so the runtime never accidentally regenerates the animator).
+
+**Bug fixes (4 distinct).**
+- **Shop button text shrunk to "..."** Same TextScaled+UITextSizeConstraint interaction we hit on Day 14's upgrade panel rows. Dropped TextScaled, used explicit TextSize 18. Applied to UpgradeButton too for consistency.
+- **GameOverPanel didn't appear on death.** TWO underlying bugs:
+  1. Rojo failed to sync the `GameOverPanel` instance into the user's Studio session — file existed on disk (Day 18 commit), instance never appeared in Explorer. Studio session was opened before the file existed, and `rojo serve` apparently doesn't always backfill new instances added mid-session. Fix: `rojo build` + reopen the .rbxlx.
+  2. After the first fix, ClientMain crashed at line 140 with "attempt to index nil with 'wave'". **Lua closure scoping gotcha** — `gameOver`/`gameWon` handlers referenced `waveState` declared LATER in the file. Lua closures bind upvalues at function-DEFINITION time, not call time; locals declared after the closure are resolved as globals → nil at call. Fix: hoisted `waveState` declaration above the handlers. Comment notes the gotcha.
+- **`strictChild` defensive guard added.** Wraps WaitForChild with an explicit error pointing at the missing child + likely cause (Rojo sync). Future "missing instance" failures print actionable error instead of cascading nil-index crashes.
+- **DataStore auth.** User session lost the Studio Access to API Services toggle (resets occasionally). Pure user-action fix per `USER-ACTIONS.md` §D + the auth troubleshooting we did. PersistenceManager's 3x-retry-then-kick worked exactly as designed.
+
+**Monetization wire-up.**
+User created 3 gamepasses + 4 dev products on Creator Hub per `USER-ACTIONS.md` §B + §C. Pasted real IDs into `Config.GAMEPASSES` + `Config.DEV_PRODUCTS` (placeholder id=0 guards now bypassed). User confirmed in-Studio R$ tests pass — gamepass detection fires, dev product grants apply, purchase confirmation toast appears.
+
+**Gameplay tweak — 5s start countdown.**
+User flagged enemies spawn immediately, no time to check shop. Added `Config.START_COUNTDOWN_SECONDS = 5` and a runBreak call before wave 1. Reuses existing `WaveBreak` RemoteEvent + client renderer — same "Wave 1 / 5 in 5s → 4s → ..." rendering as between-wave breaks, no UI changes. Tiny 1s silent `PRE_WAVE_DELAY` buffer covers cold client connect so the first "5" fire isn't dropped.
+
+**First push to origin (37 commits, range `8e0ef77..e2edc05`).**
+First push since project start. Entire 5-phase + post-stabilization history of the game is now on GitHub. Local-only single-point-of-failure removed.
+
+### Decisions made (and why)
+
+- **Re-paste-to-update workflow for map polish via ModuleScript.** Map geometry can't be version-controlled (Workspace not in Rojo per `state.md` §2). Instead of prose recipes the user manually re-edits, MapPolish.Apply() is "one command bar line → script regenerates everything correctly." Idempotent (clears `MapPolish_`-prefixed children before recreating). Each iteration is committed-as-data (the module), not committed-as-instructions.
+- **Skipped icons on the 7 monetization items.** Roblox accepts gamepasses + dev products without icons (shows a placeholder grid). Lowered friction during the user's 15-min Creator Hub session. Cosmetic, doesn't affect function.
+- **`strictChild` guard ERRORs, doesn't just warn.** Silent nil cascades into multiple confusing downstream crashes. Loud immediate failure points at the root cause exactly. Better UX for the rare-but-real Rojo sync edge cases.
+- **5s countdown reuses WaveBreak rather than a new RemoteEvent.** Same client rendering. Adding a new event would have required parallel client wiring for visually-identical output. 1 config value + 1 extra `runBreak(1, START_COUNTDOWN_SECONDS)` call = same UX for less code.
+
+### Phase summary by the numbers
+
+- 30 days planned → 27 days of dev work + this stabilization day = **28 calendar days from project start to live game**. Days 28-30 (Phase 6 launch) remain.
+- 47 commits ahead → pushed → 0 commits ahead. First-ever push to `origin/main`. Range `8e0ef77..e2edc05`.
+- 37 commits in this single calendar day (May 2, 2026) — Phase 3 close (1) + Phase 4 push (4) + Phase 5 push (5) + post-Phase-5 fixes (10) + monetization wire-up + countdown + push.
+- Live URL: https://www.roblox.com/share?code=6b575d753764f741a2a25711acdc3a7b
+- 7 Roblox monetization items live (3 gamepasses + 4 dev products), all wired into game code, R$ purchases work in Studio.
+
+### Hooks for the post
+
+- **"Lua closures don't see locals declared later — and the bug bites loud."** The waveState scoping crash. Function defined at line 128 references waveState declared at line 178. Closure captures waveState as global (no local of that name exists at def time), waveState resolves to nil at call time, `.wave` crashes obscurely. Fix is one move (hoist the local). Lesson is forever.
+- **"Rojo can fail to sync new instances if your Studio session predates the file."** GameOverPanel existed on disk for days. Studio session was opened before that. Rojo serve apparently doesn't always backfill. `rojo build` + reopen the .rbxlx is the reset hammer.
+- **"`strictChild` should be every project's default `WaitForChild` wrapper."** 5 lines, infinite-times-better debugging UX, points at the missing child name AND the likely Rojo cause.
+- **"30 days, on schedule."** The 30-day plan called for live-game by Day 30. Game is live by Day 28 (today). Phase 6 launch design + soft launch + public release fit in the remaining 2 days. Not bad for a ship-with-AI workflow.
+
+---
+
 ## 2026-05-02 — Days 23–27 / Phase 5 close (Polish + Viral)
 
 > Same-day continuation after Phase 4 close. 5 commits across 5 planned dev days, plus one fix-forward commit (accidentally tracked the user's planning doc; untracked + gitignored). Phase 5 closes — game is now polished, multiplayer-aware, and has touch controls + meme enemies. Phase 6 launch unblocked.
