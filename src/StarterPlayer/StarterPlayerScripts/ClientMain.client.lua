@@ -6,6 +6,12 @@ local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Players           = game:GetService("Players")
 local TweenService      = game:GetService("TweenService")
 local RunService        = game:GetService("RunService")
+local UserInputService  = game:GetService("UserInputService")
+
+-- Touch-only client: drives shorter currency label format + the per-element
+-- HUD repositioning block at the bottom of this file. Set ONCE at startup.
+local IS_TOUCH = UserInputService.TouchEnabled and not UserInputService.MouseEnabled
+local CURRENCY_FORMAT = IS_TOUCH and "Lv %d  ·  %d" or "Lv %d  ·  Coins: %d"
 
 local Shared             = ReplicatedStorage:WaitForChild("Shared")
 local Config             = require(Shared:WaitForChild("Config"))
@@ -272,7 +278,7 @@ local function updateCurrency()
 	local coins = player:GetAttribute("Coins") or 0
 	local level = player:GetAttribute("Level") or 1
 	local delta = coins - lastCoins
-	currencyLabel.Text = string.format("Lv %d  ·  Coins: %d", level, coins)
+	currencyLabel.Text = string.format(CURRENCY_FORMAT, level, coins)
 	if delta > 0 then
 		-- Brief color flash on the main label, plus a +N floater for the gain amount.
 		TweenService:Create(currencyLabel, CURRENCY_PULSE_INFO, {
@@ -653,59 +659,63 @@ end)
 -- whole HUD to fit phone screens; virtual KICK button mirrors Tool.Activated
 -- on Kick Boot since touch users won't have a clean way to fire AOE while
 -- still aiming the camera.
-local UserInputService = game:GetService("UserInputService")
 local kickEnemiesRemote = remotes:WaitForChild("KickEnemies")
 
-if UserInputService.TouchEnabled and not UserInputService.MouseEnabled then
-	-- Touch-specific HUD layout overrides. Roblox CoreGui (chat icon, menu icon,
-	-- player list) takes the top ~40px of the screen on phone — pushed our HUD
-	-- elements down to clear it. Buttons moved off the top-right corner
-	-- (player list lives there) into a vertical right-edge column. PC layout is
-	-- 100% untouched (these overrides only run on touch-only devices).
+if IS_TOUCH then
+	-- Touch HUD layout. Designed for phone (375×667+) and tablet (768+ wide).
+	-- Roblox CoreGui (chat icon, menu icon) sits in the inset above ScreenGui's
+	-- (0,0). On phone with a notch, IgnoreGuiInset=false (default) puts our
+	-- (0,0) ~40-60px below screen top. So even small y-offsets like 8 should
+	-- clear the Roblox icons.
+	--
+	-- Strategy: cluster ALL HUD at the top edges (left, center, right) so the
+	-- bottom of the screen is reserved for cooldown panel + KICK button + the
+	-- default Roblox tool hotbar. PC layout is 100% untouched — these
+	-- overrides only run when IS_TOUCH is true.
 
-	local TOP_OFFSET = 50  -- below Roblox's top bar
+	-- Top-left: compact "Lv N · N" (CURRENCY_FORMAT was set short for touch)
+	currencyLabel.Size     = UDim2.new(0, 130, 0, 32)
+	currencyLabel.Position = UDim2.new(0, 8, 0, 8)
 
-	-- Top-left: shrink coins/level label
-	currencyLabel.Size     = UDim2.new(0, 200, 0, 36)
-	currencyLabel.Position = UDim2.new(0, 8, 0, TOP_OFFSET)
+	-- Top-center: health bar (compact)
+	healthBar.Size     = UDim2.new(0, 200, 0, 32)
+	healthBar.Position = UDim2.new(0.5, 0, 0, 8)
 
-	-- Top-center: health bar pushed down
-	healthBar.Size     = UDim2.new(0, 240, 0, 36)
-	healthBar.Position = UDim2.new(0.5, 0, 0, TOP_OFFSET)
+	-- Wave label: row below health, slightly wider for the modifier text
+	waveLabel.Size     = UDim2.new(0, 260, 0, 24)
+	waveLabel.Position = UDim2.new(0.5, 0, 0, 46)
 
-	-- Wave label below health
-	waveLabel.Size     = UDim2.new(0, 280, 0, 26)
-	waveLabel.Position = UDim2.new(0.5, 0, 0, TOP_OFFSET + 42)
+	-- Top-right: Upgrades + Shop in vertical column (joins the rest of the
+	-- HUD at the top instead of floating mid-right). Player list opens
+	-- on-demand on phone (tap leaderboard icon) so this corner is usually free.
+	upgradeButton.Size        = UDim2.new(0, 100, 0, 32)
+	upgradeButton.Position    = UDim2.new(1, -8, 0, 8)
+	upgradeButton.AnchorPoint = Vector2.new(1, 0)
 
-	-- Right-edge button column (was top-right column; moved to mid-right to
-	-- clear the player list at top-right).
-	upgradeButton.Size        = UDim2.new(0, 110, 0, 36)
-	upgradeButton.Position    = UDim2.new(1, -8, 0.32, 0)
-	upgradeButton.AnchorPoint = Vector2.new(1, 0.5)
+	shopButton.Size        = UDim2.new(0, 100, 0, 32)
+	shopButton.Position    = UDim2.new(1, -8, 0, 46)
+	shopButton.AnchorPoint = Vector2.new(1, 0)
 
-	shopButton.Size        = UDim2.new(0, 110, 0, 36)
-	shopButton.Position    = UDim2.new(1, -8, 0.42, 0)
-	shopButton.AnchorPoint = Vector2.new(1, 0.5)
-
-	-- Panels open below the new button positions, anchored right edge.
+	-- Panels open below the buttons (top-right area).
 	upgradePanel.Size        = UDim2.new(0, 280, 0, 0)
-	upgradePanel.Position    = UDim2.new(1, -8, 0.48, 0)
+	upgradePanel.Position    = UDim2.new(1, -8, 0, 84)
 	upgradePanel.AnchorPoint = Vector2.new(1, 0)
 
 	shopPanel.Size        = UDim2.new(0, 280, 0, 0)
-	shopPanel.Position    = UDim2.new(1, -8, 0.48, 0)
+	shopPanel.Position    = UDim2.new(1, -8, 0, 84)
 	shopPanel.AnchorPoint = Vector2.new(1, 0)
 
-	-- Cooldown panel: nudge up so it doesn't crowd the default Roblox tool
-	-- hotbar at the very bottom on phone.
-	cooldownPanel.Position    = UDim2.new(0.5, 0, 1, -120)
+	-- Cooldown panel: bottom-center, lifted ~140px to clear the Roblox tool
+	-- hotbar (~80px tall) plus iOS home indicator (~34px) plus a margin.
+	cooldownPanel.Position    = UDim2.new(0.5, 0, 1, -140)
 	cooldownPanel.AnchorPoint = Vector2.new(0.5, 1)
 
-	-- Virtual KICK button — bottom-right above the tool hotbar
+	-- Virtual KICK button: bottom-right, above the tool hotbar. Larger than
+	-- desktop equivalent (none) since touch needs bigger tap targets.
 	local virtualKick = Instance.new("TextButton")
 	virtualKick.Name                   = "VirtualKickButton"
-	virtualKick.Size                   = UDim2.new(0, 96, 0, 96)
-	virtualKick.Position               = UDim2.new(1, -24, 1, -160)  -- bumped up to clear hotbar
+	virtualKick.Size                   = UDim2.new(0, 88, 0, 88)
+	virtualKick.Position               = UDim2.new(1, -16, 1, -150)
 	virtualKick.AnchorPoint            = Vector2.new(1, 1)
 	virtualKick.BackgroundColor3       = Color3.fromRGB(34, 197, 94)
 	virtualKick.BackgroundTransparency = 0.1
@@ -735,7 +745,7 @@ if UserInputService.TouchEnabled and not UserInputService.MouseEnabled then
 		kickEnemiesRemote:FireServer(flat.Unit)
 	end)
 
-	print("[ClientMain] Touch device detected — explicit per-element layout + virtual KICK button enabled")
+	print("[ClientMain] Touch HUD layout applied — top-clustered + bottom KICK + compact Lv/Coins format")
 end
 
 RunService.Heartbeat:Connect(function()
