@@ -100,6 +100,19 @@ healthChanged.OnClientEvent:Connect(function(current, max)
 	healthText.Text = current .. " / " .. max
 end)
 
+-- Wave-state tracker. Hoisted ABOVE the gameOver/gameWon handlers so those
+-- closures bind to it as an upvalue (Lua closures capture at definition time;
+-- locals declared later are resolved as globals → nil). Mutated by the
+-- waveStarted/waveBreak/enemyCountChanged handlers below.
+local waveState = {
+	mode         = "idle",   -- "idle" | "wave" | "break"
+	wave         = 0,
+	total        = 0,
+	secondsLeft  = 0,
+	enemyCount   = 0,
+	modifier     = nil,      -- string | nil — set on wave start, cleared on next wave
+}
+
 local function showGameOverPanel(headlineText, headlineColor, wavesSurvived)
 	goHeadline.Text       = headlineText
 	goHeadline.TextColor3 = headlineColor
@@ -174,15 +187,9 @@ end)
 
 -- Wave label is rendered from a tiny state machine because we combine inputs
 -- from three sources: WaveStarted (wave+total), WaveBreak (countdown), and
--- EnemyCountChanged (live remaining-enemy count). Render whenever any input updates.
-local waveState = {
-	mode         = "idle",   -- "idle" | "wave" | "break"
-	wave         = 0,
-	total        = 0,
-	secondsLeft  = 0,
-	enemyCount   = 0,
-	modifier     = nil,      -- string | nil — set on wave start, cleared on next wave
-}
+-- EnemyCountChanged (live remaining-enemy count). waveState was hoisted above
+-- the gameOver/gameWon handlers so this comment is the only documentation that
+-- still lives down here.
 
 local function renderWaveLabel()
 	if runEnded then return end
