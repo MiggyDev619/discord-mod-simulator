@@ -65,6 +65,14 @@ local function initPlayer(player)
 	for _, ul in ipairs(Config.TOOL_UNLOCKS) do
 		player:SetAttribute(unlockedAttr(ul.key), false)
 	end
+	-- v2 Week 2: cosmetic state. Equipped cosmetics are stored as string IDs
+	-- (e.g., "trail_default"). OwnedCosmetics is a comma-separated list of
+	-- cosmetic IDs the player has unlocked (Roblox attribute system doesn't
+	-- support tables; CSV is cheap + readable).
+	for _, category in ipairs(Config.COSMETIC_CATEGORIES) do
+		player:SetAttribute("Equipped" .. category, Config.DEFAULT_COSMETICS[category])
+	end
+	player:SetAttribute("OwnedCosmetics", "")  -- CSV; empty until LoadFromSave or initial grants
 end
 
 function CurrencyManager.AddCoins(player, amount)
@@ -96,6 +104,27 @@ function CurrencyManager.ResetRun(player)
 	player:SetAttribute("RunCoinsEarned", 0)
 end
 
+-- v2 Week 2: grant any cosmetics whose requireLevel <= player's current level
+-- AND requirePass is satisfied (or absent). Idempotent — GrantCosmetic skips
+-- already-owned. Called on level-up + LoadFromSave so the eligible set is
+-- always in sync.
+function CurrencyManager.GrantEligibleCosmetics(player)
+	if not player or not player.Parent then return end
+	local level = player:GetAttribute("Level") or 1
+	for _, c in ipairs(Config.COSMETICS) do
+		if c.requireLevel and c.requireLevel <= level then
+			-- Pass-gated cosmetics also need the gamepass (Donator-tier perks).
+			if c.requirePass then
+				if player:GetAttribute(c.requirePass .. "Owned") then
+					CurrencyManager.GrantCosmetic(player, c.id)
+				end
+			else
+				CurrencyManager.GrantCosmetic(player, c.id)
+			end
+		end
+	end
+end
+
 -- Per-level XP — when xp >= level * XP_PER_LEVEL_BASE, level up and carry over
 -- the overflow. Loops in case a single award covers multiple levels.
 function CurrencyManager.AddXp(player, amount)
@@ -109,10 +138,12 @@ function CurrencyManager.AddXp(player, amount)
 	local level  = player:GetAttribute("Level") or 1
 	local needed = level * Config.XP_PER_LEVEL_BASE
 
+	local leveledUp = false
 	while xp >= needed and level < Config.XP_MAX_LEVEL do
 		xp     = xp - needed
 		level  = level + 1
 		needed = level * Config.XP_PER_LEVEL_BASE
+		leveledUp = true
 		print("[CurrencyManager]", player.Name, "leveled up to", level)
 	end
 
@@ -121,6 +152,11 @@ function CurrencyManager.AddXp(player, amount)
 
 	player:SetAttribute("Xp",    xp)
 	player:SetAttribute("Level", level)
+
+	-- v2 Week 2: auto-grant any newly-eligible cosmetics on level up.
+	if leveledUp then
+		CurrencyManager.GrantEligibleCosmetics(player)
+	end
 end
 
 -- Reward a player for banning an enemy. Applies the combo multiplier to the
@@ -205,6 +241,62 @@ function CurrencyManager.LoadFromSave(player, data)
 		local attr = unlockedAttr(ul.key)
 		player:SetAttribute(attr, data[attr] == true)
 	end
+	-- v2 Week 2: cosmetic state.
+	for _, category in ipairs(Config.COSMETIC_CATEGORIES) do
+		local saved = data["Equipped" .. category]
+		if type(saved) == "string" and saved ~= "" then
+			player:SetAttribute("Equipped" .. category, saved)
+		end
+	end
+	if type(data.ownedCosmetics) == "string" then
+		player:SetAttribute("OwnedCosmetics", data.ownedCosmetics)
+	end
+	-- Re-run grant pass so newly-eligible cosmetics from level changes between
+	-- sessions get unlocked even if the saved OwnedCosmetics list is stale.
+	CurrencyManager.GrantEligibleCosmetics(player)
+end
+
+-- v2 Week 2 cosmetic helpers — exposed for CosmeticManager to call.
+local function cosmeticById(id)
+	for _, c in ipairs(Config.COSMETICS) do
+		if c.id == id then return c end
+	end
+	return nil
+end
+
+function CurrencyManager.OwnsCosmetic(player, id)
+	local owned = player:GetAttribute("OwnedCosmetics") or ""
+	if owned == "" then return false end
+	-- CSV match — naive but cheap and exact.
+	return string.find("," .. owned .. ",", "," .. id .. ",", 1, true) ~= nil
+end
+
+function CurrencyManager.GrantCosmetic(player, id)
+	if not player or not player.Parent then return end
+	if CurrencyManager.OwnsCosmetic(player, id) then return end
+	local owned = player:GetAttribute("OwnedCosmetics") or ""
+	owned = (owned == "") and id or (owned .. "," .. id)
+	player:SetAttribute("OwnedCosmetics", owned)
+	print("[CurrencyManager]", player.Name, "unlocked cosmetic:", id)
+end
+
+function CurrencyManager.TryEquipCosmetic(player, id)
+	local cosm = cosmeticById(id)
+	if not cosm then
+		warn("[CurrencyManager] Unknown cosmetic id:", id)
+		return false
+	end
+	-- Defaults are always equipable; otherwise the player needs to own it.
+	local isDefault = false
+	for _, defaultId in pairs(Config.DEFAULT_COSMETICS) do
+		if defaultId == id then isDefault = true; break end
+	end
+	if not isDefault and not CurrencyManager.OwnsCosmetic(player, id) then
+		print("[CurrencyManager]", player.Name, "tried to equip un-owned cosmetic:", id)
+		return false
+	end
+	player:SetAttribute("Equipped" .. cosm.category, id)
+	return true
 end
 
 -- Recompute all 4 cooldown attributes for a player. Used by GamepassManager
@@ -248,6 +340,10 @@ end
 local function setupPlayer(player)
 	initPlayer(player)
 	setupLeaderstats(player)
+	-- v2 Week 2: grant level-0 cosmetics immediately so new players have
+	-- something equipable before LoadFromSave runs (returning players get the
+	-- LoadFromSave grant pass too — idempotent).
+	CurrencyManager.GrantEligibleCosmetics(player)
 end
 
 for _, p in ipairs(Players:GetPlayers()) do

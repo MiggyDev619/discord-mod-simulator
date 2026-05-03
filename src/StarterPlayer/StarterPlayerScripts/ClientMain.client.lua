@@ -27,6 +27,7 @@ local purchaseUpgrade    = remotes:WaitForChild("PurchaseUpgrade")
 local enemyCountChanged  = remotes:WaitForChild("EnemyCountChanged")
 local retryRun           = remotes:WaitForChild("RetryRun")
 local muteShotFx         = remotes:WaitForChild("MuteShotFx")
+local cosmeticAction     = remotes:WaitForChild("CosmeticAction")
 
 local player        = Players.LocalPlayer
 local playerGui     = player:WaitForChild("PlayerGui")
@@ -51,10 +52,12 @@ local function strictChild(parent, childName)
 	return child
 end
 
-local upgradeButton = strictChild(mainUI, "UpgradeButton")
-local upgradePanel  = strictChild(mainUI, "UpgradePanel")
-local shopButton    = strictChild(mainUI, "ShopButton")
-local shopPanel     = strictChild(mainUI, "ShopPanel")
+local upgradeButton    = strictChild(mainUI, "UpgradeButton")
+local upgradePanel     = strictChild(mainUI, "UpgradePanel")
+local shopButton       = strictChild(mainUI, "ShopButton")
+local shopPanel        = strictChild(mainUI, "ShopPanel")
+local cosmeticsButton  = strictChild(mainUI, "CosmeticsButton")
+local cosmeticsPanel   = strictChild(mainUI, "CosmeticsPanel")
 local cooldownPanel = strictChild(mainUI, "CooldownPanel")
 local flashOverlay  = strictChild(mainUI, "FlashOverlay")
 local gameOverPanel = strictChild(mainUI, "GameOverPanel")
@@ -427,16 +430,31 @@ for i, upg in ipairs(Config.COOLDOWN_UPGRADES) do
 	end
 end
 
--- Mutex toggle: only one of (UpgradePanel, ShopPanel) visible at a time so
--- they don't overlap (both anchor top-right at y=108).
+-- Mutex toggle: only one of (UpgradePanel, ShopPanel, CosmeticsPanel) visible
+-- at a time so they don't overlap (Upgrade + Shop anchor at y=108; Cosmetics
+-- at y=156). v2 Week 2 added Cosmetics into the rotation.
+local function closeAllPanels()
+	upgradePanel.Visible   = false
+	shopPanel.Visible      = false
+	cosmeticsPanel.Visible = false
+end
+
 upgradeButton.MouseButton1Click:Connect(function()
-	shopPanel.Visible    = false
-	upgradePanel.Visible = not upgradePanel.Visible
+	local wasVisible = upgradePanel.Visible
+	closeAllPanels()
+	upgradePanel.Visible = not wasVisible
 end)
 
 shopButton.MouseButton1Click:Connect(function()
-	upgradePanel.Visible = false
-	shopPanel.Visible    = not shopPanel.Visible
+	local wasVisible = shopPanel.Visible
+	closeAllPanels()
+	shopPanel.Visible = not wasVisible
+end)
+
+cosmeticsButton.MouseButton1Click:Connect(function()
+	local wasVisible = cosmeticsPanel.Visible
+	closeAllPanels()
+	cosmeticsPanel.Visible = not wasVisible
 end)
 
 -- Shop rows: gamepasses + dev products. Each row has a label, a description
@@ -544,6 +562,93 @@ for i, dp in ipairs(Config.DEV_PRODUCTS) do
 		end
 		MarketplaceService:PromptProductPurchase(player, dp.id)
 	end)
+end
+
+-- v2 Week 2: Cosmetics panel rows. One row per cosmetic in Config.COSMETICS,
+-- with category headers between sections. Equip button is enabled when player
+-- owns the cosmetic (CurrencyManager auto-grants on level up). Locked items
+-- show "Lv N" requirement. Equipped item shows "EQUIPPED".
+local function isOwned(cosmId)
+	local owned = player:GetAttribute("OwnedCosmetics") or ""
+	if owned == "" then return false end
+	return string.find("," .. owned .. ",", "," .. cosmId .. ",", 1, true) ~= nil
+end
+
+local function isDefault(cosmId)
+	for _, defaultId in pairs(Config.DEFAULT_COSMETICS) do
+		if defaultId == cosmId then return true end
+	end
+	return false
+end
+
+local cosmeticRows = {}  -- [cosm.id] = { row, button, cosm }
+
+for catIndex, category in ipairs(Config.COSMETIC_CATEGORIES) do
+	-- Category header row
+	local header = Instance.new("TextLabel")
+	header.Name                   = category .. "Header"
+	header.Size                   = UDim2.new(1, 0, 0, 28)
+	header.BackgroundTransparency = 1
+	header.Text                   = string.upper(category) .. "S"
+	header.TextColor3             = Color3.fromRGB(180, 140, 220)
+	header.Font                   = Enum.Font.GothamBold
+	header.TextSize               = 14
+	header.TextXAlignment         = Enum.TextXAlignment.Left
+	header.LayoutOrder            = catIndex * 100
+	header.ZIndex                 = 51
+	header.Parent                 = cosmeticsPanel
+
+	for i, cosm in ipairs(Config.COSMETICS) do
+		if cosm.category == category then
+			local row, button = makeRow(catIndex * 100 + i, cosm.label, cosm.id .. "Row")
+			row.Parent = cosmeticsPanel
+			cosmeticRows[cosm.id] = { row = row, button = button, cosm = cosm }
+
+			button.MouseButton1Click:Connect(function()
+				cosmeticAction:FireServer("Equip", cosm.id)
+			end)
+		end
+	end
+end
+
+local function refreshAllCosmeticRows()
+	for cosmId, entry in pairs(cosmeticRows) do
+		local cosm   = entry.cosm
+		local button = entry.button
+		local equippedAttr = player:GetAttribute("Equipped" .. cosm.category)
+		local owned        = isOwned(cosmId) or isDefault(cosmId)
+		local passLocked   = cosm.requirePass and not player:GetAttribute(cosm.requirePass .. "Owned")
+		local levelLocked  = cosm.requireLevel and (cosm.requireLevel > (player:GetAttribute("Level") or 1))
+
+		if equippedAttr == cosmId then
+			button.Text             = "EQUIPPED"
+			button.BackgroundColor3 = Color3.fromRGB(34, 197, 94)
+			button.TextColor3       = Color3.fromRGB(9, 9, 11)
+			button.AutoButtonColor  = false
+		elseif owned and not passLocked then
+			button.Text             = "Equip"
+			button.BackgroundColor3 = Color3.fromRGB(180, 140, 220)
+			button.TextColor3       = Color3.fromRGB(9, 9, 11)
+			button.AutoButtonColor  = true
+		elseif passLocked then
+			button.Text             = "DONATOR ONLY"
+			button.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+			button.TextColor3       = Color3.fromRGB(250, 250, 250)
+			button.AutoButtonColor  = false
+		else
+			button.Text             = string.format("Lv %d", cosm.requireLevel or 0)
+			button.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+			button.TextColor3       = Color3.fromRGB(250, 250, 250)
+			button.AutoButtonColor  = false
+		end
+	end
+end
+
+refreshAllCosmeticRows()
+player:GetAttributeChangedSignal("OwnedCosmetics"):Connect(refreshAllCosmeticRows)
+player:GetAttributeChangedSignal("Level"):Connect(refreshAllCosmeticRows)
+for _, category in ipairs(Config.COSMETIC_CATEGORIES) do
+	player:GetAttributeChangedSignal("Equipped" .. category):Connect(refreshAllCosmeticRows)
 end
 
 -- Cooldown panel: each tool LocalScript writes a `<Tool>ReadyAt` attribute on

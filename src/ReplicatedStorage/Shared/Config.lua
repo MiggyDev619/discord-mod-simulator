@@ -329,6 +329,47 @@ Config.DEV_PRODUCTS = {
 
 Config.XP_BOOST_MULT = 2  -- multiplier for AddXp when XpBoostUntil > tick()
 
+-- Cosmetics (v2 Week 2). 3 categories: Trail (character running trail color),
+-- Pet (floating companion following the character), Skin (character body color
+-- override). Most unlocks are free (level-gated); Donator gamepass tier
+-- (v2 Week 4) adds a couple of exclusive cosmetics.
+--
+-- Each entry: id (unique string), category, label, color/visual config,
+-- requireLevel (0 = always available), requirePass (gamepass key or nil).
+-- "default" entries in each category are auto-granted at player init.
+Config.COSMETICS = {
+	-- Trails
+	{ id = "trail_default", category = "Trail", label = "White Trail",     color = Color3.fromRGB(250, 250, 250), requireLevel = 0  },
+	{ id = "trail_yellow",  category = "Trail", label = "Brand Yellow",    color = Color3.fromRGB(250, 204, 21),  requireLevel = 0  },
+	{ id = "trail_red",     category = "Trail", label = "Red Mod",         color = Color3.fromRGB(239, 68, 68),   requireLevel = 5  },
+	{ id = "trail_blue",    category = "Trail", label = "Cyber Blue",      color = Color3.fromRGB(120, 200, 255), requireLevel = 10 },
+	{ id = "trail_pink",    category = "Trail", label = "Furry Pink",      color = Color3.fromRGB(255, 120, 200), requireLevel = 15 },
+	{ id = "trail_rainbow", category = "Trail", label = "Donator Rainbow", color = nil,                            requireLevel = 0, requirePass = "Donator" },
+
+	-- Pets (small floating companion above character)
+	{ id = "pet_default", category = "Pet", label = "No Pet",         color = nil,                            requireLevel = 0  },
+	{ id = "pet_cube",    category = "Pet", label = "Mod Cube",       color = Color3.fromRGB(250, 204, 21),   requireLevel = 0  },
+	{ id = "pet_wumpus",  category = "Pet", label = "Mini Wumpus",    color = Color3.fromRGB(88, 101, 242),   requireLevel = 8  },
+	{ id = "pet_coin",    category = "Pet", label = "Floating Coin",  color = Color3.fromRGB(255, 215, 0),    requireLevel = 20 },
+	{ id = "pet_gold",    category = "Pet", label = "Golden Wumpus",  color = Color3.fromRGB(255, 200, 0),    requireLevel = 0, requirePass = "DonatorPlus" },
+
+	-- Skins (character body color override)
+	{ id = "skin_default", category = "Skin", label = "Default Mod",  color = nil,                            requireLevel = 0  },
+	{ id = "skin_darkops", category = "Skin", label = "Dark Ops",     color = Color3.fromRGB(30, 30, 35),     requireLevel = 5  },
+	{ id = "skin_neon",    category = "Skin", label = "Neon Mod",     color = Color3.fromRGB(120, 200, 255),  requireLevel = 12 },
+	{ id = "skin_gold",    category = "Skin", label = "Gold Donator", color = Color3.fromRGB(255, 200, 0),    requireLevel = 0, requirePass = "DonatorPlus" },
+}
+
+-- Cosmetic categories — used by ClientMain to render tabs in CosmeticsPanel.
+Config.COSMETIC_CATEGORIES = { "Trail", "Pet", "Skin" }
+
+-- Default equipped per category. CosmeticManager applies these on CharacterAdded.
+Config.DEFAULT_COSMETICS = {
+	Trail = "trail_default",
+	Pet   = "pet_default",
+	Skin  = "skin_default",
+}
+
 -- Effects
 -- Drop a Roblox sound asset ID here (e.g. "rbxassetid://9125657040"). Empty string = silent ban.
 -- In Studio: View → Toolbox → search "impact" / "whoosh" / "punch", right-click → Copy Asset ID.

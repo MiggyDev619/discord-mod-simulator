@@ -18,7 +18,7 @@ local Shared          = ReplicatedStorage:WaitForChild("Shared")
 local Config          = require(Shared:WaitForChild("Config"))
 local CurrencyManager = require(script.Parent:WaitForChild("CurrencyManager"))
 
-local SCHEMA_VERSION       = 5
+local SCHEMA_VERSION       = 7
 local STORE_NAME           = "DMS_PlayerData_v1" .. (RunService:IsStudio() and "_dev" or "")
 local LOAD_RETRY_ATTEMPTS  = 3
 local LOAD_RETRY_BACKOFFS  = { 1, 2 } -- waits between attempt 1→2 and 2→3; 3rd attempt has no wait after
@@ -59,6 +59,7 @@ local function snapshot(player)
 		xp                 = player:GetAttribute("Xp")    or 0,
 		level              = player:GetAttribute("Level") or 1,
 		starterPackClaimed = player:GetAttribute("StarterPackClaimed") == true,
+		ownedCosmetics     = player:GetAttribute("OwnedCosmetics") or "",  -- v7
 	}
 	for _, upg in ipairs(Config.COOLDOWN_UPGRADES) do
 		data[upg.levelAttr] = player:GetAttribute(upg.levelAttr) or 0
@@ -66,6 +67,10 @@ local function snapshot(player)
 	for _, ul in ipairs(Config.TOOL_UNLOCKS) do
 		local attr = unlockedAttr(ul.key)
 		data[attr] = player:GetAttribute(attr) == true
+	end
+	-- v7: equipped cosmetic per category
+	for _, category in ipairs(Config.COSMETIC_CATEGORIES) do
+		data["Equipped" .. category] = player:GetAttribute("Equipped" .. category)
 	end
 	return data
 end
@@ -98,6 +103,20 @@ local function migrate(data)
 		-- Pack later still gets the grant. Players who never buy it never see it.
 		data.starterPackClaimed = false
 		data.version            = 5
+	end
+	-- v5 → v6: placeholder bump (v2 Week 1 launched waves=10, no new persisted state).
+	if data.version == 5 then
+		data.version = 6
+	end
+	-- v6 → v7: v2 Week 2 cosmetic system. Default to free defaults for each
+	-- category and empty owned list (free defaults are always equipable
+	-- regardless of OwnedCosmetics — initPlayer sets them).
+	if data.version == 6 then
+		data.ownedCosmetics  = ""
+		data.EquippedTrail   = "trail_default"
+		data.EquippedPet     = "pet_default"
+		data.EquippedSkin    = "skin_default"
+		data.version         = 7
 	end
 	return data
 end

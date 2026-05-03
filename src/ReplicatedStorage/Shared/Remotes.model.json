@@ -52,6 +52,18 @@
     {
       "name": "MuteShotFx",
       "className": "RemoteEvent"
+    },
+    {
+      "name": "CosmeticAction",
+      "className": "RemoteEvent"
+    },
+    {
+      "name": "PerkAction",
+      "className": "RemoteEvent"
+    },
+    {
+      "name": "ChooseMode",
+      "className": "RemoteEvent"
     }
   ]
 }
