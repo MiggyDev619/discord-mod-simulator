@@ -52,11 +52,35 @@ local function destinationPosition()
 	return serverZone.Position
 end
 
+-- v2 fix-up #2: round-robin maze spawn distribution. Early waves cycle through
+-- the 4 gates predictably so all 4 are equally pressured. Later waves mix in
+-- random picks for chaos. Round-robin index persists across spawnEnemy calls
+-- (module-level), reset on ClearAll (retry).
+local roundRobinIdx = 0
+local LATE_WAVE_THRESHOLD = 6   -- wave at which we start mixing random into round-robin
+local LATE_WAVE_RANDOM_PCT = 0.3 -- 30% of late-wave spawns ignore round-robin
+
 local function spawnPosition()
 	if isMazeMode() then
 		local spawns = findMazeSpawnPoints()
 		if #spawns > 0 then
-			local pick = spawns[math.random(1, #spawns)]
+			-- Sort by name so round-robin order is deterministic across re-runs
+			-- (otherwise GetChildren order can shift between mazes).
+			table.sort(spawns, function(a, b) return a.Name < b.Name end)
+
+			local currentWave = workspace:GetAttribute("CurrentWave") or 1
+			local useRandom = false
+			if currentWave >= LATE_WAVE_THRESHOLD then
+				useRandom = math.random() < LATE_WAVE_RANDOM_PCT
+			end
+
+			local pick
+			if useRandom then
+				pick = spawns[math.random(1, #spawns)]
+			else
+				pick = spawns[(roundRobinIdx % #spawns) + 1]
+				roundRobinIdx = roundRobinIdx + 1
+			end
 			return pick.Position + Vector3.new(math.random(-1, 1), 1, math.random(-1, 1))
 		end
 	end
@@ -312,6 +336,7 @@ clearAllFunc.OnInvoke = function()
 	waveRemaining      = 0
 	lastBroadcastCount = -1
 	lastBanTime        = {}
+	roundRobinIdx      = 0  -- v2 fix-up #2: reset round-robin so retry starts fresh from gate 1
 	enemyCountChanged:FireAllClients(0)
 	print("[EnemySpawner] ClearAll — wiped board for retry")
 end

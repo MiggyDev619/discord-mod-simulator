@@ -86,6 +86,10 @@ local function runWave(wave)
 	-- v2 Week 1: publish per-wave modifier flags via workspace attributes so
 	-- gameplay systems read them without needing a require chain (CurrencyManager
 	-- reads CurrentWaveCoinMult, EnemySpawner reads CurrentWaveSilenced).
+	-- v2 fix-up #2: also publish CurrentWave so EnemySpawner can switch
+	-- maze-spawn distribution from pure-round-robin to round-robin+random
+	-- once we hit late waves.
+	workspace:SetAttribute("CurrentWave",          wave)
 	workspace:SetAttribute("CurrentWaveCoinMult",  modifier and modifier.coinMult  or 1)
 	workspace:SetAttribute("CurrentWaveSilenced",  modifier and modifier.silenced  or false)
 
