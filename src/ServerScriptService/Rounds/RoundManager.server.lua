@@ -11,6 +11,7 @@ local Config           = require(Shared:WaitForChild("Config"))
 local Systems          = ServerScriptService:WaitForChild("Systems")
 local GameManager      = require(Systems:WaitForChild("GameManager"))
 local CurrencyManager  = require(Systems:WaitForChild("CurrencyManager"))
+local MazePathCache    = require(ServerScriptService:WaitForChild("MazePathCache"))
 
 local remotes     = Shared:WaitForChild("Remotes")
 local waveStarted = remotes:WaitForChild("WaveStarted")
@@ -152,6 +153,15 @@ chooseMode.OnServerEvent:Connect(function(player, modeKey, hardMode)
 					end
 				end
 			end
+
+			-- v2 fix-up: populate MazePathCache for THIS play session.
+			-- Edit-mode MazeGenerator.Apply() filled the edit-mode cache, but
+			-- Play mode is a separate DataModel with a fresh (empty) cache.
+			-- Compute paths now so EnemySpawner can attach them when wave 1
+			-- spawns. Yielding ~1-2s before lobbyEvent:Fire is fine — it's
+			-- offset by the START_COUNTDOWN_SECONDS that follows.
+			print("[RoundManager] Maze Mode — computing path cache for play session…")
+			MazePathCache.Compute()
 		else
 			warn("[RoundManager] Maze Mode chosen but MazeGen_CenterBase not found — run MazeGenerator.Apply() first")
 		end
