@@ -74,6 +74,24 @@ local ENEMY_TYPES = {
 		reward = Config.COIN_SPLITTER_CHILD,
 	},
 
+	-- v2 Week 1 boss-flavor enemy. Slow + tanky. On ban, spawns 2 SplitterChild
+	-- adds (handled in DestroyEnemy by Name lookup) so killing the boss isn't a
+	-- clean win — you still have to mop up the adds.
+	ServerCrasher = {
+		speed      = Config.SERVER_CRASHER_SPEED,
+		health     = Config.SERVER_CRASHER_HEALTH,
+		color      = BrickColor.new("Really black"),
+		size       = Vector3.new(4.5, 5.5, 4.5),  -- biggest enemy
+		reward     = Config.COIN_SERVER_CRASHER,
+		speechPool = {
+			"CRASHING THIS SERVER",
+			"hope you have backups",
+			"DDoS time",
+			"SEGMENTATION FAULT",
+			"see you in the recovery logs",
+		},
+	},
+
 	-- Meme enemies (Day 25). Each has a speechPool — Effects.SpeechBubble fires
 	-- with a random phrase on spawn for chat-bubble flavor.
 	Karen = {
@@ -174,7 +192,8 @@ local function spawnEnemy(typeName, speedMultiplier, spawnPos, sizeOverride, spe
 	end
 
 	-- Meme enemies pop a speech bubble on spawn — pure flavor.
-	if def.speechPool then
+	-- v2 Week 1: SilentWave modifier suppresses speech for the wave.
+	if def.speechPool and not workspace:GetAttribute("CurrentWaveSilenced") then
 		local phrase = def.speechPool[math.random(1, #def.speechPool)]
 		Effects.SpeechBubble(enemy, phrase)
 	end
@@ -267,6 +286,17 @@ destroyEnemyFunc.OnInvoke = function(player, enemyPart)
 				math.sin(angle) * Config.SPLITTER_CHILD_OFFSET
 			)
 			spawnEnemy("SplitterChild", nil, banPos + offset, childSize, childSpeed)
+		end
+		Effects.SplitEffect(banPos)
+	end
+
+	-- v2 Week 1: ServerCrasher boss spawns 2 SplitterChild adds on ban (so the
+	-- boss kill isn't a clean win — you still mop up adds).
+	if enemyPart.Name == "ServerCrasher" then
+		for j = 1, 2 do
+			local angle  = (j - 1) * math.pi  -- opposite sides
+			local offset = Vector3.new(math.cos(angle) * 6, 0, math.sin(angle) * 6)
+			spawnEnemy("SplitterChild", nil, banPos + offset, nil, nil)
 		end
 		Effects.SplitEffect(banPos)
 	end

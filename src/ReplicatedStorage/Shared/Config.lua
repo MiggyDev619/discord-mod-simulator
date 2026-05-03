@@ -93,14 +93,26 @@ Config.KICK_SOUND_VOLUME     = 0.8
 -- Wave system
 Config.PRE_WAVE_DELAY        = 1     -- silent buffer (seconds) before the visible countdown — covers client boot + remote connect so the first countdown fire isn't dropped
 Config.START_COUNTDOWN_SECONDS = 5   -- visible countdown shown via WaveBreak before wave 1 — gives players time to check the shop
-Config.WAVE_ENEMY_BASE       = 5     -- enemies in wave 1
-Config.WAVE_ENEMY_SCALE      = 3     -- additional enemies added each wave
-Config.WAVE_SPEED_SCALE      = 1.15  -- multiply enemy speed each wave (compounding)
+-- v2 Week 1: doubled wave count 5 → 10, rebalanced base/scale so total run
+-- length stays ~12-15 min (was ~7-8 min for 5 waves). Lower base + smaller
+-- scale + same speed scaling keeps difficulty curve recognizable but extends
+-- progression headroom. Wave 8+ rolls the new ServerCrasher boss enemy.
+Config.WAVE_ENEMY_BASE       = 4     -- enemies in wave 1 (was 5)
+Config.WAVE_ENEMY_SCALE      = 2     -- additional enemies added each wave (was 3)
+Config.WAVE_SPEED_SCALE      = 1.12  -- multiply enemy speed each wave (was 1.15 — softer ramp over 10 waves)
 Config.WAVE_BREAK_DURATION   = 8     -- seconds of break between waves
 Config.SPAMMER_CHANCE        = 0.3   -- probability (0–1) an enemy is a Spammer (wave 2+)
 Config.TELEPORTER_CHANCE     = 0.2   -- probability (0–1) an enemy is a Teleporter (wave 3+)
 Config.SPLITTER_CHANCE       = 0.15  -- probability (0–1) an enemy is a Splitter (wave 4+)
-Config.WAVES_TO_WIN          = 5     -- survive this many waves and the game declares victory
+Config.SERVER_CRASHER_CHANCE = 0.15  -- probability an enemy is a ServerCrasher (wave 8+) — boss-flavor
+Config.WAVES_TO_WIN          = 10    -- v2 bump: 5 → 10 (was the 30-day-plan launch number)
+
+-- ServerCrasher (v2 Week 1) — boss-flavor late-game enemy. High HP, slow,
+-- and on ban it spawns 2 SplitterChildren as a fallback aggression mechanic
+-- (so killing the boss isn't a clean win — you still have to clean up adds).
+Config.SERVER_CRASHER_SPEED  = 8     -- slow, gives players time to react
+Config.SERVER_CRASHER_HEALTH = 80
+Config.COIN_SERVER_CRASHER   = 50    -- highest base reward in the game
 
 -- Wave modifiers (chaos events). Rolled at wave start with MODIFIER_CHANCE
 -- probability for waves >= 3. forceType overrides RoundManager's normal type
@@ -131,6 +143,25 @@ Config.WAVE_MODIFIERS = {
 		enemyCountMult = 1.0,   -- splitters already produce children — don't bump count
 		speedMult      = 1.0,
 		forceType      = "Splitter",
+	},
+	-- v2 Week 1 modifiers (extending the chaos-event rotation):
+	{
+		key            = "CoinFrenzy",
+		label          = "COIN FRENZY",
+		minWave        = 5,
+		enemyCountMult = 1.0,
+		speedMult      = 1.0,
+		forceType      = nil,   -- normal mix
+		coinMult       = 2,     -- NEW field — doubles all coin rewards this wave
+	},
+	{
+		key            = "SilentWave",
+		label          = "SILENT WAVE",
+		minWave        = 6,
+		enemyCountMult = 1.0,
+		speedMult      = 1.15,  -- slight speed bump to compensate for "easier to read" silent enemies
+		forceType      = nil,
+		silenced       = true,  -- NEW field — suppresses meme-enemy speech bubbles this wave
 	},
 }
 

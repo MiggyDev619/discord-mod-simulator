@@ -250,6 +250,72 @@ function MapPolish.Apply()
 	emitter.Acceleration  = Vector3.new(0, 1.5, 0)  -- slow drift up
 	emitter.Parent        = packetAnchor
 
+	-- v2 Week 1: Mid-lane decorative arches (3 evenly spaced) — give the lane
+	-- a sense of progression / depth as enemies travel through them.
+	for i, t in ipairs({ 0.20, 0.50, 0.80 }) do
+		local along    = startPos:Lerp(endPos, t)
+		local archCFrame = CFrame.lookAt(
+			Vector3.new(along.X, floorY + 6, along.Z),
+			Vector3.new(along.X, floorY + 6, along.Z) + laneDir
+		)
+		-- Arch beam (top horizontal piece spanning the lane)
+		makePart(
+			Map, "Arch" .. i .. "Top",
+			Vector3.new(40, 0.6, 0.6),
+			archCFrame * CFrame.new(0, 6, 0),
+			DARK, Enum.Material.Slate
+		)
+		-- Arch verticals (left + right pillars supporting the beam)
+		for side, sign in ipairs({ 1, -1 }) do
+			local sidePos = Vector3.new(along.X, floorY + 3, along.Z) + lanePerp * (18 * sign)
+			makePart(
+				Map, "Arch" .. i .. "Pillar" .. (side == 1 and "L" or "R"),
+				Vector3.new(0.6, 12, 0.6),
+				CFrame.new(sidePos),
+				DARK, Enum.Material.Slate
+			)
+		end
+		-- Yellow LED accent on the arch top — brand line continuity.
+		makePart(
+			Map, "Arch" .. i .. "Light",
+			Vector3.new(40, 0.3, 0.3),
+			archCFrame * CFrame.new(0, 6.5, 0),
+			YELLOW, Enum.Material.Neon
+		)
+	end
+
+	-- v2 Week 1: lane-side signage along the wall tops — themed text panels
+	-- like "RULES" / "BANS PER MIN" / "NO SPAM". Pure flavor, no gameplay.
+	local SIGN_TEXTS = { "RULES", "BANS/MIN: 99", "NO SPAM", "SERVER STATUS: OK", "MOD CREW" }
+	for i, signText in ipairs(SIGN_TEXTS) do
+		local t        = (i - 0.5) / #SIGN_TEXTS  -- evenly distributed along lane
+		local along    = startPos:Lerp(endPos, t)
+		local side     = (i % 2 == 0) and 1 or -1   -- alternate sides
+		local signPos  = Vector3.new(along.X, floorY + wallHeight + 1.5, along.Z) + lanePerp * (18 * side)
+
+		local signPart = makePart(
+			Map, "Sign" .. i,
+			Vector3.new(6, 1.5, 0.2),
+			CFrame.lookAt(signPos, signPos + (-laneDir * side) * 0.001 + Vector3.new(0, 0, side)),
+			Color3.fromRGB(20, 20, 24), Enum.Material.SmoothPlastic
+		)
+		-- SurfaceGui with the sign text
+		local sgui = Instance.new("SurfaceGui")
+		sgui.Face = Enum.NormalId.Back  -- text faces the lane
+		sgui.LightInfluence = 0
+		sgui.Parent = signPart
+		local label = Instance.new("TextLabel")
+		label.Size = UDim2.new(1, 0, 1, 0)
+		label.BackgroundTransparency = 1
+		label.Text = signText
+		label.TextColor3 = YELLOW
+		label.Font = Enum.Font.GothamBold
+		label.TextScaled = true
+		label.TextStrokeTransparency = 0.5
+		label.TextStrokeColor3 = Color3.new(0, 0, 0)
+		label.Parent = sgui
+	end
+
 	-- Animation Script: pulses the tower LED parts via TweenService. Created at
 	-- Apply time and parented to Map (workspace child Scripts auto-run in Play).
 	-- The Source assignment requires Studio script-edit permissions, which the

@@ -69,9 +69,17 @@ end
 
 function CurrencyManager.AddCoins(player, amount)
 	if not player or not player.Parent then return end
-	-- Double Coins gamepass multiplier applies to all positive coin gains.
-	if amount > 0 and player:GetAttribute("DoubleCoinsOwned") then
-		amount = amount * Config.DOUBLE_COINS_MULT
+	if amount > 0 then
+		-- Double Coins gamepass multiplier (always applies to positive gains).
+		if player:GetAttribute("DoubleCoinsOwned") then
+			amount = amount * Config.DOUBLE_COINS_MULT
+		end
+		-- v2 Week 1: CoinFrenzy modifier sets workspace.CurrentWaveCoinMult
+		-- when the wave rolls. Stacks with Double Coins for max 4× per kill.
+		local waveMult = workspace:GetAttribute("CurrentWaveCoinMult")
+		if waveMult and waveMult > 1 then
+			amount = amount * waveMult
+		end
 	end
 	local coins = (player:GetAttribute("Coins") or 0) + amount
 	player:SetAttribute("Coins", coins)

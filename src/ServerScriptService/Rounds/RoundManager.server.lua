@@ -24,16 +24,17 @@ local setWaveRemaining   = spawnerScript:WaitForChild("SetWaveRemaining")
 local clearAll           = spawnerScript:WaitForChild("ClearAll")
 
 -- Table-driven type picker. Iterates in order; first roll under chance wins.
--- Higher-tier enemies listed first so they get first shot at the slot
--- (matches the "highest-tier-eligible enemy gets first claim" rule from
--- 2026-04-25 Day 9 devlog). Defaults to Troll if nothing rolls.
+-- Higher-tier enemies listed first so they get first shot at the slot.
+-- ServerCrasher (v2 Week 1 boss-flavor) listed FIRST so it has top priority
+-- in late waves. Defaults to Troll if nothing rolls.
 local ENEMY_PICK_TABLE = {
-	{ type = "Splitter",   minWave = 4, chance = Config.SPLITTER_CHANCE },
-	{ type = "DiscordMod", minWave = 4, chance = Config.DISCORD_MOD_CHANCE },
-	{ type = "Furry",      minWave = 3, chance = Config.FURRY_CHANCE },
-	{ type = "Teleporter", minWave = 3, chance = Config.TELEPORTER_CHANCE },
-	{ type = "Karen",      minWave = 2, chance = Config.KAREN_CHANCE },
-	{ type = "Spammer",    minWave = 2, chance = Config.SPAMMER_CHANCE },
+	{ type = "ServerCrasher", minWave = 8, chance = Config.SERVER_CRASHER_CHANCE },
+	{ type = "Splitter",      minWave = 4, chance = Config.SPLITTER_CHANCE },
+	{ type = "DiscordMod",    minWave = 4, chance = Config.DISCORD_MOD_CHANCE },
+	{ type = "Furry",         minWave = 3, chance = Config.FURRY_CHANCE },
+	{ type = "Teleporter",    minWave = 3, chance = Config.TELEPORTER_CHANCE },
+	{ type = "Karen",         minWave = 2, chance = Config.KAREN_CHANCE },
+	{ type = "Spammer",       minWave = 2, chance = Config.SPAMMER_CHANCE },
 }
 
 local function pickEnemyType(wave)
@@ -79,6 +80,13 @@ local function runWave(wave)
 		print(string.format("[RoundManager] Wave %d/%d | %d enemies | %.2fx speed",
 			wave, Config.WAVES_TO_WIN, enemyCount, speedMult))
 	end
+
+	-- v2 Week 1: publish per-wave modifier flags via workspace attributes so
+	-- gameplay systems read them without needing a require chain (CurrencyManager
+	-- reads CurrentWaveCoinMult, EnemySpawner reads CurrentWaveSilenced).
+	workspace:SetAttribute("CurrentWaveCoinMult",  modifier and modifier.coinMult  or 1)
+	workspace:SetAttribute("CurrentWaveSilenced",  modifier and modifier.silenced  or false)
+
 	setWaveRemaining:Invoke(enemyCount)
 	waveStarted:FireAllClients(wave, Config.WAVES_TO_WIN, modifier and modifier.label or nil)
 
