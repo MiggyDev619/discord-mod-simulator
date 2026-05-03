@@ -657,29 +657,69 @@ local UserInputService = game:GetService("UserInputService")
 local kickEnemiesRemote = remotes:WaitForChild("KickEnemies")
 
 if UserInputService.TouchEnabled and not UserInputService.MouseEnabled then
-	local hudScale = Instance.new("UIScale")
-	hudScale.Scale  = 0.75
-	hudScale.Parent = mainUI
+	-- Touch-specific HUD layout overrides. Roblox CoreGui (chat icon, menu icon,
+	-- player list) takes the top ~40px of the screen on phone — pushed our HUD
+	-- elements down to clear it. Buttons moved off the top-right corner
+	-- (player list lives there) into a vertical right-edge column. PC layout is
+	-- 100% untouched (these overrides only run on touch-only devices).
 
+	local TOP_OFFSET = 50  -- below Roblox's top bar
+
+	-- Top-left: shrink coins/level label
+	currencyLabel.Size     = UDim2.new(0, 200, 0, 36)
+	currencyLabel.Position = UDim2.new(0, 8, 0, TOP_OFFSET)
+
+	-- Top-center: health bar pushed down
+	healthBar.Size     = UDim2.new(0, 240, 0, 36)
+	healthBar.Position = UDim2.new(0.5, 0, 0, TOP_OFFSET)
+
+	-- Wave label below health
+	waveLabel.Size     = UDim2.new(0, 280, 0, 26)
+	waveLabel.Position = UDim2.new(0.5, 0, 0, TOP_OFFSET + 42)
+
+	-- Right-edge button column (was top-right column; moved to mid-right to
+	-- clear the player list at top-right).
+	upgradeButton.Size        = UDim2.new(0, 110, 0, 36)
+	upgradeButton.Position    = UDim2.new(1, -8, 0.32, 0)
+	upgradeButton.AnchorPoint = Vector2.new(1, 0.5)
+
+	shopButton.Size        = UDim2.new(0, 110, 0, 36)
+	shopButton.Position    = UDim2.new(1, -8, 0.42, 0)
+	shopButton.AnchorPoint = Vector2.new(1, 0.5)
+
+	-- Panels open below the new button positions, anchored right edge.
+	upgradePanel.Size        = UDim2.new(0, 280, 0, 0)
+	upgradePanel.Position    = UDim2.new(1, -8, 0.48, 0)
+	upgradePanel.AnchorPoint = Vector2.new(1, 0)
+
+	shopPanel.Size        = UDim2.new(0, 280, 0, 0)
+	shopPanel.Position    = UDim2.new(1, -8, 0.48, 0)
+	shopPanel.AnchorPoint = Vector2.new(1, 0)
+
+	-- Cooldown panel: nudge up so it doesn't crowd the default Roblox tool
+	-- hotbar at the very bottom on phone.
+	cooldownPanel.Position    = UDim2.new(0.5, 0, 1, -120)
+	cooldownPanel.AnchorPoint = Vector2.new(0.5, 1)
+
+	-- Virtual KICK button — bottom-right above the tool hotbar
 	local virtualKick = Instance.new("TextButton")
-	virtualKick.Name                  = "VirtualKickButton"
-	virtualKick.Size                  = UDim2.new(0, 96, 0, 96)
-	virtualKick.Position              = UDim2.new(1, -24, 1, -132)
-	virtualKick.AnchorPoint           = Vector2.new(1, 1)
-	virtualKick.BackgroundColor3      = Color3.fromRGB(34, 197, 94)
+	virtualKick.Name                   = "VirtualKickButton"
+	virtualKick.Size                   = UDim2.new(0, 96, 0, 96)
+	virtualKick.Position               = UDim2.new(1, -24, 1, -160)  -- bumped up to clear hotbar
+	virtualKick.AnchorPoint            = Vector2.new(1, 1)
+	virtualKick.BackgroundColor3       = Color3.fromRGB(34, 197, 94)
 	virtualKick.BackgroundTransparency = 0.1
-	virtualKick.BorderSizePixel       = 0
-	virtualKick.Text                  = "KICK"
-	virtualKick.TextColor3            = Color3.fromRGB(9, 9, 11)
-	virtualKick.Font                  = Enum.Font.GothamBold
-	virtualKick.TextSize              = 22
-	virtualKick.AutoButtonColor       = true
-	virtualKick.ZIndex                = 60
-	virtualKick.Parent                = mainUI
+	virtualKick.BorderSizePixel        = 0
+	virtualKick.Text                   = "KICK"
+	virtualKick.TextColor3             = Color3.fromRGB(9, 9, 11)
+	virtualKick.Font                   = Enum.Font.GothamBold
+	virtualKick.TextSize               = 22
+	virtualKick.AutoButtonColor        = true
+	virtualKick.ZIndex                 = 60
+	virtualKick.Parent                 = mainUI
 	local vkCorner = Instance.new("UICorner")
 	vkCorner.CornerRadius = UDim.new(1, 0)  -- circular
 	vkCorner.Parent       = virtualKick
-	-- Hide while no Kick Boot unlock — same gating as the cooldown slot.
 	local function refreshVk()
 		virtualKick.Visible = player:GetAttribute("KickBootUnlocked") == true
 	end
@@ -688,7 +728,6 @@ if UserInputService.TouchEnabled and not UserInputService.MouseEnabled then
 
 	local Workspace = game:GetService("Workspace")
 	virtualKick.MouseButton1Click:Connect(function()
-		-- Mirror KickBootScript's send: camera-derived flat lookDir.
 		local cam     = Workspace.CurrentCamera
 		local look    = cam.CFrame.LookVector
 		local flat    = Vector3.new(look.X, 0, look.Z)
@@ -696,7 +735,7 @@ if UserInputService.TouchEnabled and not UserInputService.MouseEnabled then
 		kickEnemiesRemote:FireServer(flat.Unit)
 	end)
 
-	print("[ClientMain] Touch device detected — HUD scaled 0.75 + virtual KICK button enabled")
+	print("[ClientMain] Touch device detected — explicit per-element layout + virtual KICK button enabled")
 end
 
 RunService.Heartbeat:Connect(function()
