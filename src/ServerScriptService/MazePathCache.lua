@@ -23,10 +23,10 @@ local cache = {}  -- [markerName] = { waypoints = { Waypoint, Waypoint, ... } }
 -- lane-only). AgentHeight covers any vertical clearance. CanJump=false
 -- because enemies walk via BodyVelocity, not Humanoid.
 local AGENT_PARAMS = {
-	AgentRadius      = 2.2,
+	AgentRadius      = 2.5,   -- bumped from 2.2 — covers Splitter (3.2 wide → radius 1.6 + margin)
 	AgentHeight      = 5,
 	AgentCanJump     = false,
-	WaypointSpacing  = 6,  -- studs between waypoints; 6 fits our 12-stud cell size cleanly
+	WaypointSpacing  = 4,     -- bumped down from 6 — tighter path-following at corners
 }
 
 function MazePathCache.Compute()

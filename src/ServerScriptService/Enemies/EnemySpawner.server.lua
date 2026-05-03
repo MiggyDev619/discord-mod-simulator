@@ -261,7 +261,9 @@ local function spawnEnemy(typeName, speedMultiplier, spawnPos, sizeOverride, spe
 		Effects.SpeechBubble(enemy, phrase)
 	end
 
-	print("[EnemySpawner] Spawned", typeName, "| speed:", speed, "| active:", #activeEnemies)
+	print(string.format("[EnemySpawner] Spawned %s | speed: %.2f | active: %d | waypoints: %s",
+		typeName, speed, #activeEnemies,
+		(waypoints and tostring(#waypoints)) or "none (lane / no maze paths)"))
 end
 
 local spawnFunc = Instance.new("BindableFunction")
@@ -490,7 +492,12 @@ RunService.Heartbeat:Connect(function(dt)
 				-- look like a marching column.
 				local target = wp.Position + data.wpJitter
 				local toWp   = target - enemy.Position
-				local wpDist = Vector3.new(toWp.X, 0, toWp.Z).Magnitude
+				-- Project onto X+Z plane for both distance check AND velocity.
+				-- Waypoints are at floor Y; enemy is ~2 studs above. Including Y
+				-- in the unit vector reduces X+Z speed (BodyVelocity MaxForce.Y
+				-- is 0). Flatten to keep full horizontal speed.
+				local toWpFlat = Vector3.new(toWp.X, 0, toWp.Z)
+				local wpDist   = toWpFlat.Magnitude
 
 				if wpDist < 3 then
 					data.currentWaypoint = data.currentWaypoint + 1
@@ -499,10 +506,11 @@ RunService.Heartbeat:Connect(function(dt)
 					data.velocity.Velocity = Vector3.zero
 				elseif now - (data.lastWpAdvance or now) > 10 then
 					-- Stuck — force-advance to next waypoint
+					print("[EnemySpawner]", data.typeName, "STUCK on waypoint", data.currentWaypoint, "— advancing")
 					data.currentWaypoint = data.currentWaypoint + 1
 					data.lastWpAdvance   = now
 				else
-					data.velocity.Velocity = toWp.Unit * effectiveSpeed
+					data.velocity.Velocity = toWpFlat.Unit * effectiveSpeed
 				end
 			else
 				-- Lane mode OR finished maze waypoints — straight seek.
