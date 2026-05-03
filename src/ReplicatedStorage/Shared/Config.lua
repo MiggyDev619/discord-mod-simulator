@@ -64,12 +64,12 @@ Config.BAN_DAMAGE            = 999
 Config.BAN_RANGE             = 15
 Config.BAN_COOLDOWN          = 0.5
 
--- Mute Gun (hitscan freeze gun — first hit freezes, second hit destroys)
+-- Mute Gun (hitscan freeze gun — first hit freezes, second hit bans)
 -- Reworked from a slow-utility into a gun: distinguishes from Timeout Card by
--- requiring two hits but rewarding coins on the kill. Combo'd with Timeout
--- (already-frozen target) destroys in one shot.
+-- requiring two hits but rewarding coins on the ban. Combo'd with Timeout
+-- (already-frozen target) bans in one shot.
 Config.MUTE_RANGE            = 50    -- gun-feel — much longer than ban/timeout
-Config.MUTE_COOLDOWN         = 1.5   -- slower than ban; takes 2 shots to kill
+Config.MUTE_COOLDOWN         = 1.5   -- slower than ban; takes 2 shots to ban
 Config.MUTE_FREEZE_DURATION  = 3.0   -- first-hit freeze window before it wears off
 Config.MUTE_SOUND_ID         = "rbxassetid://115994842117368"
 Config.MUTE_SOUND_VOLUME     = 0.7
@@ -143,8 +143,8 @@ Config.COIN_SPLITTER_CHILD   = 5    -- low — keeps splitter from being a coin 
 -- Meme enemy coin rewards live with their stats blocks above.
 Config.COIN_KICK_PER_HIT     = 5    -- per enemy in the kick cone; small so it doesn't replace banning
 
--- Combo bonus: destroying an enemy with FrozenUntil OR MuteFrozenUntil active
--- multiplies the kill reward. Encourages setup plays (timeout → ban,
+-- Combo bonus: banning an enemy with FrozenUntil OR MuteFrozenUntil active
+-- multiplies the ban reward. Encourages setup plays (timeout → ban,
 -- mute-shot → mute-shot, timeout → kick).
 Config.COMBO_MULTIPLIER      = 2
 
@@ -218,7 +218,7 @@ Config.COOLDOWN_UPGRADES = {
 -- Persistence (DataStore)
 Config.PERSISTENCE_AUTOSAVE_INTERVAL = 60  -- seconds between dirty-player autosaves; PlayerRemoving + BindToClose also save
 
--- XP / player level. XP earned per kill = enemy's base coin Reward (combo
+-- XP / player level. XP earned per ban = enemy's base coin Reward (combo
 -- bonus does NOT inflate XP — combos reward you in coins, not progression).
 -- Per-level requirement: level * XP_PER_LEVEL_BASE (lv 1→2 = 100, lv 2→3 = 200,
 -- etc.). XP carries over on level-up, no XP wasted.
@@ -233,7 +233,7 @@ Config.GAMEPASSES = {
 		key         = "DoubleCoins",
 		id          = 1821265152,
 		label       = "Double Coins",
-		description = "Earn 2× coins from every kill, forever.",
+		description = "Earn 2× coins from every ban, forever.",
 		price       = 199,
 		effectAttr  = "DoubleCoinsOwned",
 	},

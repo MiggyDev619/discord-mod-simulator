@@ -1,8 +1,8 @@
 -- ServerScriptService/Enemies/MuteHandler
--- Validates client MuteEnemy requests. Two-hit destroy: first hit on a fresh
+-- Validates client MuteEnemy requests. Two-hit ban: first hit on a fresh
 -- target sets MuteFrozenUntil + freezes the enemy. Second hit on a target with
 -- MuteFrozenUntil OR FrozenUntil (Timeout) active calls EnemySpawner.DestroyEnemy
--- and the kill is processed through the same path as Ban (with combo bonus).
+-- and the ban is processed through the same path as Ban Hammer (with combo bonus).
 
 local ReplicatedStorage   = game:GetService("ReplicatedStorage")
 local ServerScriptService = game:GetService("ServerScriptService")
@@ -51,7 +51,7 @@ muteEnemy.OnServerEvent:Connect(function(player, enemyPart)
 
 	if alreadyFrozen then
 		local reward, combo = destroyEnemy:Invoke(player, enemyPart)
-		print(string.format("[MuteHandler] %s killed %s with second shot (+%d coins%s)",
+		print(string.format("[MuteHandler] %s banned %s with second shot (+%d coins%s)",
 			player.Name, enemyPart.Name, reward, combo and " — COMBO!" or ""))
 		return
 	end

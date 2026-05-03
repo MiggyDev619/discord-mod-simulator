@@ -115,12 +115,12 @@ function CurrencyManager.AddXp(player, amount)
 	player:SetAttribute("Level", level)
 end
 
--- Reward a player for destroying an enemy. Applies the combo multiplier to the
+-- Reward a player for banning an enemy. Applies the combo multiplier to the
 -- COIN reward when the enemy was frozen (Timeout's FrozenUntil OR Mute Gun's
--- MuteFrozenUntil active at destroy time). XP is always the base amount —
+-- MuteFrozenUntil active at ban time). XP is always the base amount —
 -- combos reward you in coins, not progression. Returns the coin amount and
 -- whether a combo applied (callers may want to show it in popups).
-function CurrencyManager.RewardForKill(player, enemyPart)
+function CurrencyManager.RewardForBan(player, enemyPart)
 	if not player or not enemyPart then return 0 end
 	local base = enemyPart:GetAttribute("Reward") or 0
 	if base <= 0 then return 0 end

@@ -245,7 +245,7 @@ destroyEnemyFunc.OnInvoke = function(player, enemyPart)
 	end
 
 	local banPos        = enemyPart.Position
-	local reward, combo = CurrencyManager.RewardForKill(player, enemyPart)
+	local reward, combo = CurrencyManager.RewardForBan(player, enemyPart)
 
 	-- Splitter hook: spawn children at the death position before flashing/destroying.
 	if enemyPart.Name == "Splitter" then
