@@ -298,7 +298,7 @@ Config.GAMEPASSES = {
 	-- v2 Week 4: Donator tier — cosmetic + small stat boost, no pay-to-win.
 	{
 		key         = "Donator",
-		id          = 0,  -- TODO: replace with real gamepass id (USER-ACTIONS V2 §A)
+		id          = 1822586467,
 		label       = "Donator",
 		description = "Exclusive rainbow trail + chat badge + 5% coin bonus.",
 		price       = 99,
@@ -306,7 +306,7 @@ Config.GAMEPASSES = {
 	},
 	{
 		key         = "DonatorPlus",
-		id          = 0,  -- TODO: replace with real gamepass id (USER-ACTIONS V2 §A)
+		id          = 1822443261,
 		label       = "Donator+",
 		description = "All Donator perks + Golden Wumpus pet + Gold skin + 10% coin bonus.",
 		price       = 299,

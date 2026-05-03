@@ -218,13 +218,15 @@ function MazeGenerator.Apply()
 		YELLOW, Enum.Material.Neon)
 
 	-- Center base — bright blurple Neon platform marking where enemies converge.
-	-- This is the maze-mode equivalent of ServerZone (defended objective).
-	makePart(Map, "CenterBase", Vector3.new(CELL_SIZE * 2 - 1, 1, CELL_SIZE * 2 - 1),
+	-- CanCollide=false so PathfindingService doesn't treat it as an obstacle
+	-- (otherwise enemies path AROUND the center instead of TO it).
+	local centerBase = makePart(Map, "CenterBase", Vector3.new(CELL_SIZE * 2 - 1, 1, CELL_SIZE * 2 - 1),
 		CFrame.new(mazeOrigin + Vector3.new(0, 0.5, 0)),
 		BLURPLE, Enum.Material.Neon, 0.2)
+	centerBase.CanCollide = false
 
-	-- 4 spawn markers (red) at the entrance cells. Maze-mode EnemySpawner
-	-- (when properly integrated) will read these positions to multi-spawn.
+	-- 4 spawn markers (red) at the entrance cells. CanCollide=false for the
+	-- same PathfindingService reason — markers are nav-points, not obstacles.
 	local mid = math.floor(GRID_N / 2)
 	local spawnPositions = {
 		{ name = "SpawnN", pos = cellOrigin(mid, 1)       + Vector3.new(0, 1, -CELL_SIZE/2 + 1) },
@@ -236,12 +238,26 @@ function MazeGenerator.Apply()
 		local marker = makePart(Map, sp.name,
 			Vector3.new(2, 1, 2), CFrame.new(sp.pos),
 			DANGER, Enum.Material.Neon, 0.3)
-		marker:SetAttribute("MazeSpawn", true)  -- tag for future EnemySpawner queries
+		marker.CanCollide = false
+		marker:SetAttribute("MazeSpawn", true)  -- tag for EnemySpawner queries
 	end
+
+	-- Maze floor: also non-colliding so PathfindingService treats it as
+	-- walkable surface. (Walls remain CanCollide=true — they're the actual
+	-- obstacles.)
+	local floor = Map:FindFirstChild(PREFIX .. "Floor")
+	if floor then floor.CanCollide = true end  -- floor IS collidable; agents walk on it
+
+	-- v2 fix-up: pre-compute PathfindingService waypoints from each spawn
+	-- marker to CenterBase. Cached in MazePathCache for EnemySpawner to
+	-- read on enemy spawn. ComputeAsync yields per call — 4 sequential
+	-- yields, ~1-2s total at maze gen time. Trade: ZERO per-enemy compute
+	-- at runtime.
+	local MazePathCache = require(script.Parent:WaitForChild("MazePathCache"))
+	MazePathCache.Compute()
 
 	print(string.format("[MazeGenerator] Generated %dx%d maze at %s — %d cells, 4 spawn markers, center base.",
 		GRID_N, GRID_N, tostring(mazeOrigin), GRID_N * GRID_N))
-	print("[MazeGenerator] NOTE: enemy maze AI not yet wired. Picking 'Maze Mode' in lobby currently loads Lane Mode behavior on this geometry.")
 end
 
 return MazeGenerator

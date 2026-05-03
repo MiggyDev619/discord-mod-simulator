@@ -13,6 +13,7 @@ local Effects         = require(Shared:WaitForChild("Effects"))
 local Systems         = ServerScriptService:WaitForChild("Systems")
 local GameManager     = require(Systems:WaitForChild("GameManager"))
 local CurrencyManager = require(Systems:WaitForChild("CurrencyManager"))
+local MazePathCache   = require(ServerScriptService:WaitForChild("MazePathCache"))
 
 local remotes            = Shared:WaitForChild("Remotes")
 local banEnemy           = remotes:WaitForChild("BanEnemy")
@@ -215,13 +216,35 @@ local function spawnEnemy(typeName, speedMultiplier, spawnPos, sizeOverride, spe
 	if typeName == "Teleporter" then
 		nextTeleport = tick() + Config.TELEPORTER_INTERVAL
 	end
+
+	-- v2 fix-up: maze pathfinding. If Maze Mode is active AND we have cached
+	-- paths, attach the waypoint list for the spawn marker closest to this
+	-- enemy. Heartbeat follows waypoints instead of straight-line seek.
+	-- Splitter children (spawnPos passed in) skip path attachment — they
+	-- inherit lane-style straight-line seek to the destination.
+	local waypoints, currentWp, lastWpAdvance = nil, nil, nil
+	if isMazeMode() and not spawnPos and MazePathCache.HasPaths() then
+		local closestMarker = MazePathCache.FindClosestSpawnMarker(enemy.Position)
+		if closestMarker then
+			waypoints = MazePathCache.GetWaypoints(closestMarker.Name)
+			if waypoints then
+				currentWp     = 2  -- skip [1] = spawn position itself
+				lastWpAdvance = tick()
+			end
+		end
+	end
+
 	table.insert(activeEnemies, {
-		part           = enemy,
-		velocity       = velocity,
-		speed          = speed,
-		damageCooldown = 0,
-		typeName       = typeName,
-		nextTeleport   = nextTeleport,
+		part            = enemy,
+		velocity        = velocity,
+		speed           = speed,
+		damageCooldown  = 0,
+		typeName        = typeName,
+		nextTeleport    = nextTeleport,
+		waypoints       = waypoints,        -- nil for lane mode + Splitter children
+		currentWaypoint = currentWp,        -- index into waypoints array
+		lastWpAdvance   = lastWpAdvance,    -- tick() of last waypoint advance (stuck detection)
+		wpJitter        = Vector3.new((math.random() - 0.5) * 2, 0, (math.random() - 0.5) * 2),
 	})
 
 	-- Splitter parents promise N future children — those count toward wave-remaining
@@ -455,7 +478,36 @@ RunService.Heartbeat:Connect(function(dt)
 				end
 			end
 		else
-			data.velocity.Velocity = diff.Unit * effectiveSpeed
+			-- v2 fix-up: maze waypoint follow. Enemies with cached path follow
+			-- waypoints in sequence, advancing when within reach. Stuck-detection
+			-- force-advances after 10s no progress (rare — usually a Splitter
+			-- child or kicked enemy in an awkward spot). Once past last waypoint,
+			-- falls through to direct seek toward CenterBase (which is now
+			-- close enough that straight-line works).
+			if data.waypoints and data.currentWaypoint and data.currentWaypoint <= #data.waypoints then
+				local wp = data.waypoints[data.currentWaypoint]
+				-- Add small per-enemy jitter so a wave from the same spawn doesn't
+				-- look like a marching column.
+				local target = wp.Position + data.wpJitter
+				local toWp   = target - enemy.Position
+				local wpDist = Vector3.new(toWp.X, 0, toWp.Z).Magnitude
+
+				if wpDist < 3 then
+					data.currentWaypoint = data.currentWaypoint + 1
+					data.lastWpAdvance   = now
+					-- Velocity will be set on next iteration with new waypoint
+					data.velocity.Velocity = Vector3.zero
+				elseif now - (data.lastWpAdvance or now) > 10 then
+					-- Stuck — force-advance to next waypoint
+					data.currentWaypoint = data.currentWaypoint + 1
+					data.lastWpAdvance   = now
+				else
+					data.velocity.Velocity = toWp.Unit * effectiveSpeed
+				end
+			else
+				-- Lane mode OR finished maze waypoints — straight seek.
+				data.velocity.Velocity = diff.Unit * effectiveSpeed
+			end
 		end
 	end
 
