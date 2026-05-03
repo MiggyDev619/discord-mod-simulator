@@ -363,6 +363,14 @@ Config.COSMETICS = {
 -- Cosmetic categories — used by ClientMain to render tabs in CosmeticsPanel.
 Config.COSMETIC_CATEGORIES = { "Trail", "Pet", "Skin" }
 
+-- Movement perks (v2 Week 3). Auto-granted at the listed level — no purchase
+-- required. Each perk is implemented client-side in ClientMain (sprint hooks
+-- UserInputService, double-jump hooks Humanoid.Jumping).
+Config.PERKS = {
+	Sprint     = { level = 1,  walkSpeedMult = 1.5,  description = "Hold Shift (or sprint button on touch) to move 50% faster." },
+	DoubleJump = { level = 5,                       description = "Press Jump again in mid-air for one extra jump." },
+}
+
 -- Default equipped per category. CosmeticManager applies these on CharacterAdded.
 Config.DEFAULT_COSMETICS = {
 	Trail = "trail_default",

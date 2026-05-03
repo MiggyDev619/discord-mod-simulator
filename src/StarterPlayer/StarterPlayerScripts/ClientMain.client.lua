@@ -766,6 +766,85 @@ end)
 -- still aiming the camera.
 local kickEnemiesRemote = remotes:WaitForChild("KickEnemies")
 
+-- v2 Week 3: Movement perks (sprint + double jump). Auto-granted at level
+-- gates from Config.PERKS — no purchase, no UI. Sprint: hold Shift on PC,
+-- on-screen sprint button on touch (added below in IS_TOUCH block).
+-- Double jump: press Jump again mid-air after Lv 5.
+local SPRINT_KEY = Enum.KeyCode.LeftShift
+local sprintHeld = false
+local jumpsUsed  = 0  -- resets when grounded; allows max 2 jumps total when DoubleJump perk owned
+
+local function baseWalkSpeed()
+	return 16  -- Roblox default
+end
+
+local function applyWalkSpeed()
+	local character = player.Character
+	if not character then return end
+	local hum = character:FindFirstChildOfClass("Humanoid")
+	if not hum then return end
+	local level = player:GetAttribute("Level") or 1
+	local sprintAvailable = level >= Config.PERKS.Sprint.level
+	if sprintHeld and sprintAvailable then
+		hum.WalkSpeed = baseWalkSpeed() * Config.PERKS.Sprint.walkSpeedMult
+	else
+		hum.WalkSpeed = baseWalkSpeed()
+	end
+end
+
+UserInputService.InputBegan:Connect(function(input, processed)
+	if processed then return end
+	if input.KeyCode == SPRINT_KEY then
+		sprintHeld = true
+		applyWalkSpeed()
+	end
+end)
+UserInputService.InputEnded:Connect(function(input)
+	if input.KeyCode == SPRINT_KEY then
+		sprintHeld = false
+		applyWalkSpeed()
+	end
+end)
+
+-- Hook character spawn — re-apply walk speed AND wire double jump.
+local function setupCharacterPerks(character)
+	local hum = character:WaitForChild("Humanoid", 5)
+	if not hum then return end
+	jumpsUsed = 0
+	applyWalkSpeed()
+
+	hum.StateChanged:Connect(function(_, new)
+		if new == Enum.HumanoidStateType.Landed then
+			jumpsUsed = 0
+		end
+	end)
+
+	-- Double jump: catch Jump input mid-air. Roblox disables Jump while in
+	-- Freefall by default; we re-enable via SetStateEnabled + manually trigger.
+	hum:SetStateEnabled(Enum.HumanoidStateType.Jumping, true)
+end
+
+if player.Character then setupCharacterPerks(player.Character) end
+player.CharacterAdded:Connect(setupCharacterPerks)
+player:GetAttributeChangedSignal("Level"):Connect(applyWalkSpeed)
+
+UserInputService.JumpRequest:Connect(function()
+	local level = player:GetAttribute("Level") or 1
+	if level < Config.PERKS.DoubleJump.level then return end
+	local character = player.Character
+	if not character then return end
+	local hum = character:FindFirstChildOfClass("Humanoid")
+	if not hum then return end
+	local state = hum:GetState()
+	-- Allow a second jump only if we're mid-air AND haven't used the bonus yet.
+	if state == Enum.HumanoidStateType.Freefall and jumpsUsed < 2 then
+		jumpsUsed += 1
+		hum:ChangeState(Enum.HumanoidStateType.Jumping)
+	elseif state == Enum.HumanoidStateType.Jumping or state == Enum.HumanoidStateType.RunningNoPhysics or state == Enum.HumanoidStateType.Running then
+		jumpsUsed = 1  -- count the first jump
+	end
+end)
+
 if IS_TOUCH then
 	-- Touch HUD layout. Designed for phone (375×667+) and tablet (768+ wide).
 	-- Roblox CoreGui (chat icon, menu icon) sits in the inset above ScreenGui's
