@@ -27,9 +27,9 @@
 
 ## 2. Where You Are Right Now
 
-**Day:** 27 (Phase 5 closed)
-**Phase:** 5 — Polish + Viral · CLOSED
-**Next phase:** 6 — Launch (Days 28–30)
+**Day:** 30 (Phase 6 closed — **30-day plan COMPLETE**)
+**Phase:** 6 — Launch · CLOSED
+**Next phase:** post-launch iteration based on real player metrics. **Game live as "Server Mod Simulator"** at https://www.roblox.com/share?code=6b575d753764f741a2a25711acdc3a7b
 
 > See `DEVLOG-NOTES.md` for per-session details. This is the at-a-glance state.
 
@@ -70,12 +70,12 @@
 - **Day 25:** 3 meme enemies — Karen (slow tank, 25c), Furry (fragile speedster, 22c), Discord Mod (medium, 28c). Each has a `speechPool` table; `EnemySpawner.spawnEnemy` fires `Effects.SpeechBubble` with a random phrase on spawn. `Effects.spawnBanMemePopup` joins every BanEffect with a meme one-liner ("you got banned lol", "skill issue", "L + ratio", etc.). RoundManager.pickEnemyType refactored to a table-driven `ENEMY_PICK_TABLE` (6 enemy types now eligible).
 - **Day 26–27:** Multiplayer polish — `CurrencyManager.setupLeaderstats` creates Coins + Level IntValues mirrored from attributes (Roblox player list now shows both). `MuteShotFx` RemoteEvent bounces Mute Gun tracer effects from shooter → all clients so other players see your shots; ClientMain renders for non-local-players (skips own bounce to avoid double-render). Light anti-spoof: server validates muzzle position is within 8 studs of player's character.
 
-**Next up — Phase 6 (Days 28–30): Launch**
-- **Day 28:** Icon, thumbnail, description, tags. See `docs/USER-ACTIONS.md` §J for the launch checklist (gear-up Phase 6 doc lands then).
-- **Day 29:** Soft launch — share to friends/Discord, gather feedback, fix the inevitable bugs.
-- **Day 30:** Public release. TikTok / Reddit / Discord posts.
+**Done — Phase 6 (Days 28–30): Launch**
+- **Day 28:** Icon (512×512 PNG, brand-yellow ban hammer + electric energy + visible enemies + scattered coins) + thumbnail (1920×1080 cinematic with player + all 4 tools + "DEFEND THE SERVER. SURVIVE 5 WAVES!"). Description rewritten in "ban" language. Hashtags: 7 in-game + 15 social. Renamed **Discord Mod Simulator → Server Mod Simulator** to avoid Discord trademark.
+- **Day 29:** Soft launch — URL shared with first players, watched Output for any issues that didn't surface in Studio.
+- **Day 30:** Public release. Privacy flipped to Public. All-ages publishing tier unlocked (ID + age + 2-step + Premium subscription, ~10 min via Roblox eligibility flow).
 
-**Milestone target:** shipped. Game is monetized, polished, and multiplayer-coop. The 30-day plan reaches its endpoint.
+**Milestone target reached:** shipped. Game is monetized, polished, multiplayer-coop, touch-supported, on Roblox at all-ages tier, on GitHub, with public hashtagged posts driving discovery. The 30-day plan reaches its endpoint **in 14 calendar days.**
 
 ---
 
@@ -309,11 +309,11 @@ Goal: **Ship it.**
 - [x] Gamepasses (Double Coins 199 R$, Faster Cooldowns 299 R$, Starter Pack 499 R$ — IDs are placeholders until user creates them on Creator Hub per `docs/USER-ACTIONS.md` §B)
 - [x] Dev products (Instant Revive 99 R$, Coin Pack Small 49 R$, Coin Pack Large 199 R$, XP Boost 99 R$ — IDs same caveat per §C)
 
-**Launch** — Phase 6 (Days 28–30)
-- [ ] Icon
-- [ ] Thumbnail
-- [ ] Description
-- [ ] First players
+**Launch**
+- [x] Icon (512×512, brand-yellow ban hammer + electric energy + enemies + coins)
+- [x] Thumbnail (1920×1080 cinematic, all 4 tools labeled, "DEFEND THE SERVER")
+- [x] Description (ban-language rewrite, hashtagged for SEO)
+- [x] First players (Public release 2026-05-03, soft launch + TikTok/Reddit posts)
 
 ---
 

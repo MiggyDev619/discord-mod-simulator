@@ -12,6 +12,77 @@ Raw build notes for the Discord Mod Simulator Roblox project, structured for a d
 
 ---
 
+## 2026-05-03 — Phase 6 launch / 30-day plan CLOSE
+
+> The game shipped. Phase 6 (Days 28-30) compressed into one push: icon + thumbnail uploaded, description finalized in "ban" language, hashtags picked, experience flipped to Public, soft launch + public posts went live. **30-day plan complete in 14 calendar days.** Game is live at https://www.roblox.com/share?code=6b575d753764f741a2a25711acdc3a7b. Renamed to **"Server Mod Simulator"** to dodge Discord's trademark.
+
+### What "Phase 6 closed" means against `plan.md` §7
+
+| Phase 6 scope (Days 28-30) | Status |
+|---|---|
+| Icon, thumbnail, description, tags (Day 28) | ✓ icon (512×512 PNG, brand-yellow ban hammer + electric energy + visible enemies + scattered coins). Thumbnail (1920×1080 cinematic — player Mod with hood + headphones holding Mute Gun, all 4 tools labeled at bottom, troll/Karen enemies framing, "DEFEND THE SERVER. SURVIVE 5 WAVES!" hook). Description rewritten in "ban" language (no "kill" anywhere). Hashtags: 7 in-game (`#robloxgame #robloxdev #simulator #towerdefense #servermodsimulator #moderator #banhammer`) + 15 for TikTok/social. |
+| Soft launch to friends (Day 29) | ✓ shared the URL with first players |
+| Public release (Day 30) | ✓ Public privacy flipped on, all-ages publishing tier unlocked (ID + age + 2-step + Premium subscription done in ~10 min via Roblox eligibility flow) |
+
+### Decisions made (and why)
+
+- **Renamed "Discord Mod Simulator" → "Server Mod Simulator"** during Phase 6 prep. Discord Inc. holds "Discord" as a trademark. Roblox moderation reliably flags trademark-borrowing names for first-time publishers; the rename removes that risk without changing gameplay (the in-game premise is "moderate a chat server" — the name now matches that abstraction). Project folder + repo name unchanged (still `discord-mod-simulator`); the public-facing name is the only change. Saves the headache of a takedown notice or forced rebrand mid-launch.
+- **No `#discord` hashtag.** Same trademark reasoning — and our `#servermodsimulator` branded tag won't be drowned in noise from Discord Inc.'s actual content.
+- **Skipped social-media ad spend at launch.** Soft launch + organic posts on TikTok/Reddit are zero-cost, low-risk. Roblox CAC (cost per acquired player) is high; better to validate organic interest first, then spend on ads if early metrics suggest paid would amplify.
+- **Public privacy enabled BEFORE the public posts went out.** If posts went live while the game was Friends-only, kids clicking the link would hit "you don't have access" — kills conversion. Public flag first, posts second.
+
+### 30-day plan by the numbers
+
+- **Calendar days from project start to launch:** Day 1 (2026-04-20) → Day 30 launch (today, 2026-05-03) = **14 calendar days for a 30-day plan**. ~53% schedule compression via the autonomous batch runs in Phases 3-5.
+- **Total commits:** 51 to `main`, all pushed to `origin/main` (0 ahead of remote).
+- **Roblox monetization items live:** 7 (3 gamepasses + 4 dev products), all wired into game code, all tested with simulated R$ in Studio.
+- **Schema versions shipped:** v1 → v2 → v3 → v4 → v5, full migration chain in PersistenceManager. **Zero save data lost across 4 schema bumps.**
+- **Tools / enemy types / wave modifiers:** 4 tools (Ban / Mute / Timeout / Kick) + 7 enemy types (Troll, Spammer, Teleporter, Splitter, SplitterChild, Karen, Furry, Discord Mod) + 3 wave modifiers (Spam Storm, Toxic Wave, Splitter Surge).
+- **Devices supported:** Computer + Tablet + Phone (touch HUD with explicit per-element layout overrides).
+- **First-time Roblox publisher → all-ages publishing tier:** ~10 min for ID + age + 2-step + Premium subscription.
+
+### What's intentionally not built / deferred to post-launch
+
+- **Post-launch metrics watch.** First few days will tell whether touch UX holds up at scale (only 1 device tested), gamepass conversion economy is reasonable, any exploits surface.
+- **Player-feedback-driven iteration.** Phase 5 deferred items still in plan §9 (Mute Gun aim tuning, per-element responsive layout, Kick whiff visual, custom hotbar, in-game settings menu, hover tooltips, ambient sound). Pull from §9 based on what players actually complain about.
+- **DataStore queue warning on disconnect.** Still firing occasionally. Benign so far. Will revisit if a save is ever actually dropped.
+- **Roblox PlayerList overlap with Upgrades+Shop on PC** — backlogged 2026-05-02. Not blocking; multiplayer worked.
+- **Phase 4 rebalance hook.** Coin Pack pricing, gamepass effect strength, unlock cost curve — all guesses. Real conversion data will inform tuning.
+
+### The whole journey, one paragraph each
+
+**Days 1-5 (Phase 1) — Core loop.** 5 days of foundation: Rojo setup, GameManager, EnemySpawner, RoundManager, Ban Hammer with server-side validation, currency via Player attributes, win condition with `IsGameOver()` covering both loss and win. Hardest phase — every system from scratch. Lesson: server-authoritative for destructive actions from day 1 saved every multiplayer concern later.
+
+**Days 6-12 (Phase 2) — Game feel.** `Effects.lua` module, `HitFlash`, camera shake via `Humanoid.CameraOffset`, swing animation, visible 3D hammer (Handle + Head + WeldConstraint), full status-effect toolkit (Mute Gun slow → Timeout freeze → Kick AOE knockback), Teleporter + Splitter enemies, UI polish v1 (Frame-based health bar, live wave count, cooldown panel), `FlashOverlay`, brand rebrand to yellow/black. Closed by recording-session polish (Effects shockwaves + LED glow + bumped camera shake). The "looks like a real game" inflection point.
+
+**Days 13-18 (Phase 3) — Retention.** First DataStore work (`PersistenceManager` with schema-versioned saves + Studio mock fallback). Upgrade tree expanded into 4 cooldown upgrades. Mid-phase pivot (Day 14.5): Mute Gun reworked from slow utility into hitscan freeze gun (gun-shaped model, mouse-cursor raycast, two-hit destroy with combo bonus). `COMBO_MULTIPLIER` doubled rewards for destroying frozen enemies. Tool unlock system (gates Mute / Timeout / Kick behind coin costs). Wave modifiers (Spam Storm, Toxic Wave, Splitter Surge). XP/level system. Restart flow with `GameOverPanel` + RETRY button.
+
+**Days 19-22 (Phase 4) — Monetization.** 3 gamepasses (Double Coins, Faster Cooldowns, Starter Pack) + 4 dev products (Instant Revive, Coin Pack S/L, XP Boost) + Shop UI. Code-ready for R$ flow before any real Roblox listing existed (the `id = 0` placeholder pattern: code paths are valid, prompts no-op gracefully until real IDs land). Balance pass bumped tool unlock costs 50% to give the Starter Pack gamepass meaningful ROI.
+
+**Days 23-27 (Phase 5) — Polish + viral.** Themed map via Studio command-bar script (server tower with LED bands, moderator's desk + blurple monitor, decorative pillars, lane stripe, floating data-packet particles, pulsing tower LEDs, Wumpus statue, empty side workstation). Touch controls (UIScale-then-explicit-positioning, virtual KICK button). Meme enemies (Karen, Furry, Discord Mod) with chat-bubble speech pools. Roblox leaderstats. Server-bounced Mute Gun tracers (multiplayer visibility into other players' shots).
+
+**Days 28-30 (Phase 6) — Launch (today).** Icon, thumbnail, description, hashtags, public release. The shortest phase — most of the work was creative asset design + Roblox eligibility steps. 30-day plan closed.
+
+### Hooks for the post — pick the angle you've been building all month
+
+- **"30-day Roblox game, launched in 14 days."** The headline. Plan compression came from autonomous batch runs in Phases 3-5 (one Q&A session per phase up front, then days of execution in one push). Doesn't replace human design judgment — compresses execution dramatically.
+- **"51 commits, every one closed-out properly."** Every commit was scoped to one concern. Every phase had a close-out devlog entry that doubled as a postmortem checkpoint. The discipline of "ship → log → close" beat "ship → fix → ship → fix" by a wide margin.
+- **"Schema versioning paid for itself 4 times in 6 days."** v1 → v2 → v3 → v4 → v5 all shipped during the autonomous Phase 3-4 push. Zero saves lost. Every migration was 4-6 lines. The Day 13 setup ("just in case we need it") earned its keep four times over.
+- **"The autonomous batch was the unlock."** Three multi-day phases executed in single pushes after one Q&A session each — Phase 3 (Days 13-18 = 6 days of work), Phase 4 (Days 19-22 = 4 days), Phase 5 (Days 23-27 = 5 days). All defaults locked up front, then continuous code with commits per day. The pattern that made the timeline work.
+- **"Tool unlocks are a free retention loop."** Locking the 3 non-Ban tools behind coin costs (Day 14.5) gave fresh players a multi-hour goal trail without any new mechanics. The tools always existed — the gate IS the progression. Free retention.
+- **"Don't name your kid-audience Roblox game after a trademarked brand."** Renamed "Discord Mod Simulator" → "Server Mod Simulator" during Phase 6 prep. Trademark caught early would have been a forced takedown post-launch. Caught it before publish.
+
+### What's next (post-launch, post-30-day-plan)
+
+- **Watch first-week metrics.** Active players, average session length, gamepass conversion rate, where players drop off.
+- **Player-feedback-driven iteration.** Pull from §9 backlog based on real complaints, not internal guesses.
+- **Soak window: 1 week.** Don't ship breaking changes for the first 7 days. Let the game settle. Then iterate.
+- **Phase 4 rebalance** if monetization conversion is way off — Coin Pack pricing, gamepass effect strength, unlock cost curve.
+
+The 30-day plan is closed. The game shipped. **Project complete.**
+
+---
+
 ## 2026-05-02 — Post-Phase 5 stabilization + monetization wire-up + first push
 
 > Same calendar day as the Phase 5 close (and Phases 3 + 4 close). Fix-up + verification pass after all Phase 1-5 code shipped: map polish iterated to fix visual issues, real Roblox monetization IDs wired in, 5s visible start countdown added, GameOverPanel sync + Lua-scoping bugs fixed, **37 commits pushed to `origin/main`** (first push since project start at Day 1). Game is live at https://www.roblox.com/share?code=6b575d753764f741a2a25711acdc3a7b — personal-use publishing tier per Day 13, see `USER-ACTIONS.md` §J for Phase 6 launch path.
