@@ -249,6 +249,14 @@ Config.COOLDOWN_UPGRADES = {
 -- Persistence (DataStore)
 Config.PERSISTENCE_AUTOSAVE_INTERVAL = 60  -- seconds between dirty-player autosaves; PlayerRemoving + BindToClose also save
 
+-- Hard Mode (v2 Week 7) — opt-in difficulty toggle in the lobby. When the run
+-- has CurrentHardMode true, enemies damage the player character on touch.
+-- Compensation: 2× coin reward in Hard Mode.
+Config.HARD_MODE_TOUCH_DAMAGE         = 8     -- HP per touch tick (player Humanoid takes damage)
+Config.HARD_MODE_TOUCH_RADIUS         = 4     -- studs — distance at which an enemy is "touching"
+Config.HARD_MODE_INVINCIBILITY_FRAMES = 1.5   -- seconds of i-frames after taking damage
+Config.HARD_MODE_COIN_BONUS           = 2     -- multiplier on coin rewards while CurrentHardMode is true
+
 -- XP / player level. XP earned per ban = enemy's base coin Reward (combo
 -- bonus does NOT inflate XP — combos reward you in coins, not progression).
 -- Per-level requirement: level * XP_PER_LEVEL_BASE (lv 1→2 = 100, lv 2→3 = 200,

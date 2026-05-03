@@ -95,6 +95,11 @@ function CurrencyManager.AddCoins(player, amount)
 		elseif player:GetAttribute("DonatorOwned") then
 			amount = amount * (1 + Config.DONATOR_COIN_BONUS)
 		end
+		-- v2 Week 7: Hard Mode coin compensation. Multiplies on top of all
+		-- other bonuses since Hard Mode is meaningfully harder.
+		if workspace:GetAttribute("CurrentHardMode") then
+			amount = amount * Config.HARD_MODE_COIN_BONUS
+		end
 	end
 	local coins = (player:GetAttribute("Coins") or 0) + amount
 	player:SetAttribute("Coins", coins)
