@@ -400,6 +400,22 @@ Config.PERKS = {
 	DoubleJump = { level = 5,                       description = "Press Jump again in mid-air for one extra jump." },
 }
 
+-- Achievements (v2 Week 8). Each fires once when its trigger condition is
+-- met. Optional rewardCosmetic grants the named cosmetic ID on unlock.
+-- AchievementManager stores OwnedAchievements as CSV (same as OwnedCosmetics).
+-- Triggers are checked at specific call sites (ban, level up, wave clear).
+Config.ACHIEVEMENTS = {
+	{ id = "first_ban",      label = "First Ban",       description = "Ban your first troll.",            trigger = "BanCount",  goal = 1,   rewardCosmetic = nil          },
+	{ id = "centurion",      label = "Centurion",       description = "Ban 100 trolls (lifetime).",       trigger = "BanCount",  goal = 100, rewardCosmetic = "trail_red" },
+	{ id = "thousand",       label = "Thousand Bans",   description = "Ban 1000 trolls (lifetime).",      trigger = "BanCount",  goal = 1000,rewardCosmetic = "pet_coin"  },
+	{ id = "level_5",        label = "Up and Coming",   description = "Reach Level 5.",                   trigger = "Level",     goal = 5,   rewardCosmetic = nil          },
+	{ id = "level_10",       label = "Levelheaded",     description = "Reach Level 10.",                  trigger = "Level",     goal = 10,  rewardCosmetic = "trail_blue" },
+	{ id = "level_20",       label = "Veteran Mod",     description = "Reach Level 20.",                  trigger = "Level",     goal = 20,  rewardCosmetic = "pet_coin"  },
+	{ id = "wave_5",         label = "Halfway",         description = "Clear Wave 5 in any mode.",        trigger = "WaveCleared", goal = 5, rewardCosmetic = nil          },
+	{ id = "wave_10",        label = "Server Champion", description = "Clear all 10 waves.",              trigger = "WaveCleared", goal = 10,rewardCosmetic = "skin_neon" },
+	{ id = "combo_master",   label = "Combo Master",    description = "Land 25 combo bans (lifetime).",   trigger = "ComboCount", goal = 25, rewardCosmetic = "trail_pink"},
+}
+
 -- Default equipped per category. CosmeticManager applies these on CharacterAdded.
 Config.DEFAULT_COSMETICS = {
 	Trail = "trail_default",

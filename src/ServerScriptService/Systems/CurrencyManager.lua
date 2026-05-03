@@ -73,6 +73,10 @@ local function initPlayer(player)
 		player:SetAttribute("Equipped" .. category, Config.DEFAULT_COSMETICS[category])
 	end
 	player:SetAttribute("OwnedCosmetics", "")  -- CSV; empty until LoadFromSave or initial grants
+	-- v2 Week 8: achievement counters + owned achievement IDs.
+	player:SetAttribute("OwnedAchievements",   "")
+	player:SetAttribute("BanCountLifetime",    0)
+	player:SetAttribute("ComboCountLifetime",  0)
 end
 
 function CurrencyManager.AddCoins(player, amount)
@@ -166,8 +170,12 @@ function CurrencyManager.AddXp(player, amount)
 	player:SetAttribute("Level", level)
 
 	-- v2 Week 2: auto-grant any newly-eligible cosmetics on level up.
+	-- v2 Week 8: also fire achievement check.
 	if leveledUp then
 		CurrencyManager.GrantEligibleCosmetics(player)
+		if _G.DMSAchievementManager then
+			_G.DMSAchievementManager.OnLevelUp(player, level)
+		end
 	end
 end
 
@@ -189,6 +197,16 @@ function CurrencyManager.RewardForBan(player, enemyPart)
 	local total = combo and (base * Config.COMBO_MULTIPLIER) or base
 	CurrencyManager.AddCoins(player, total)
 	CurrencyManager.AddXp(player, base)
+
+	-- v2 Week 8: achievement trigger hooks. AchievementManager exposes its
+	-- API via _G to avoid a require dependency cycle (CurrencyManager is
+	-- already required by AchievementManager — bidirectional require would
+	-- need module-level lazy resolution).
+	if _G.DMSAchievementManager then
+		_G.DMSAchievementManager.OnBan(player)
+		if combo then _G.DMSAchievementManager.OnCombo(player) end
+	end
+
 	return total, combo == true
 end
 
@@ -262,6 +280,16 @@ function CurrencyManager.LoadFromSave(player, data)
 	end
 	if type(data.ownedCosmetics) == "string" then
 		player:SetAttribute("OwnedCosmetics", data.ownedCosmetics)
+	end
+	-- v2 Week 8: achievement counters + owned achievements.
+	if type(data.ownedAchievements) == "string" then
+		player:SetAttribute("OwnedAchievements", data.ownedAchievements)
+	end
+	if type(data.banCountLifetime) == "number" then
+		player:SetAttribute("BanCountLifetime", data.banCountLifetime)
+	end
+	if type(data.comboCountLifetime) == "number" then
+		player:SetAttribute("ComboCountLifetime", data.comboCountLifetime)
 	end
 	-- Re-run grant pass so newly-eligible cosmetics from level changes between
 	-- sessions get unlocked even if the saved OwnedCosmetics list is stale.

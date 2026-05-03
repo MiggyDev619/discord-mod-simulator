@@ -18,7 +18,7 @@ local Shared          = ReplicatedStorage:WaitForChild("Shared")
 local Config          = require(Shared:WaitForChild("Config"))
 local CurrencyManager = require(script.Parent:WaitForChild("CurrencyManager"))
 
-local SCHEMA_VERSION       = 7
+local SCHEMA_VERSION       = 8
 local STORE_NAME           = "DMS_PlayerData_v1" .. (RunService:IsStudio() and "_dev" or "")
 local LOAD_RETRY_ATTEMPTS  = 3
 local LOAD_RETRY_BACKOFFS  = { 1, 2 } -- waits between attempt 1→2 and 2→3; 3rd attempt has no wait after
@@ -59,7 +59,10 @@ local function snapshot(player)
 		xp                 = player:GetAttribute("Xp")    or 0,
 		level              = player:GetAttribute("Level") or 1,
 		starterPackClaimed = player:GetAttribute("StarterPackClaimed") == true,
-		ownedCosmetics     = player:GetAttribute("OwnedCosmetics") or "",  -- v7
+		ownedCosmetics     = player:GetAttribute("OwnedCosmetics") or "",      -- v7
+		ownedAchievements  = player:GetAttribute("OwnedAchievements") or "",   -- v8
+		banCountLifetime   = player:GetAttribute("BanCountLifetime") or 0,     -- v8
+		comboCountLifetime = player:GetAttribute("ComboCountLifetime") or 0,   -- v8
 	}
 	for _, upg in ipairs(Config.COOLDOWN_UPGRADES) do
 		data[upg.levelAttr] = player:GetAttribute(upg.levelAttr) or 0
@@ -118,6 +121,16 @@ local function migrate(data)
 		data.EquippedSkin    = "skin_default"
 		data.version         = 7
 	end
+	-- v7 → v8: v2 Week 8 achievements. Existing players have 0 lifetime
+	-- counts and no owned achievements (re-earn naturally during play —
+	-- AchievementManager.checkAllOnLoad fires on join in case existing
+	-- BanCountLifetime should retroactively trigger any).
+	if data.version == 7 then
+		data.ownedAchievements  = ""
+		data.banCountLifetime   = 0
+		data.comboCountLifetime = 0
+		data.version            = 8
+	end
 	return data
 end
 
@@ -166,10 +179,17 @@ local function loadPlayer(player)
 
 	loaded[player] = true
 
-	player:GetAttributeChangedSignal("Coins"):Connect(function()              dirty[player] = true end)
-	player:GetAttributeChangedSignal("Xp"):Connect(function()                 dirty[player] = true end)
-	player:GetAttributeChangedSignal("Level"):Connect(function()              dirty[player] = true end)
-	player:GetAttributeChangedSignal("StarterPackClaimed"):Connect(function() dirty[player] = true end)
+	player:GetAttributeChangedSignal("Coins"):Connect(function()                dirty[player] = true end)
+	player:GetAttributeChangedSignal("Xp"):Connect(function()                   dirty[player] = true end)
+	player:GetAttributeChangedSignal("Level"):Connect(function()                dirty[player] = true end)
+	player:GetAttributeChangedSignal("StarterPackClaimed"):Connect(function()   dirty[player] = true end)
+	player:GetAttributeChangedSignal("OwnedCosmetics"):Connect(function()       dirty[player] = true end)
+	player:GetAttributeChangedSignal("OwnedAchievements"):Connect(function()    dirty[player] = true end)
+	player:GetAttributeChangedSignal("BanCountLifetime"):Connect(function()     dirty[player] = true end)
+	player:GetAttributeChangedSignal("ComboCountLifetime"):Connect(function()   dirty[player] = true end)
+	for _, category in ipairs(Config.COSMETIC_CATEGORIES) do
+		player:GetAttributeChangedSignal("Equipped" .. category):Connect(function() dirty[player] = true end)
+	end
 	for _, upg in ipairs(Config.COOLDOWN_UPGRADES) do
 		player:GetAttributeChangedSignal(upg.levelAttr):Connect(function() dirty[player] = true end)
 	end
