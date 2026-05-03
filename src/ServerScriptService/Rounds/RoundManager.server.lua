@@ -97,8 +97,12 @@ local function runWave(wave)
 	end
 end
 
-local function runBreak(nextWave)
-	for secondsLeft = Config.WAVE_BREAK_DURATION, 1, -1 do
+-- Tick a countdown via the WaveBreak RemoteEvent. Default duration is the
+-- between-wave break; the start-of-game countdown passes a shorter value.
+-- Client renders each tick as "Wave N / total in Xs" in the wave label.
+local function runBreak(nextWave, durationSec)
+	durationSec = durationSec or Config.WAVE_BREAK_DURATION
+	for secondsLeft = durationSec, 1, -1 do
 		if GameManager.IsGameOver() then return end
 		waveBreak:FireAllClients(nextWave, Config.WAVES_TO_WIN, secondsLeft)
 		task.wait(1)
@@ -110,7 +114,12 @@ end
 -- only after the player clicks Retry does GameManager.Reset clear the flag.
 local function startRun()
 	task.spawn(function()
+		-- Tiny silent buffer so the first countdown fire isn't dropped on cold
+		-- client boot, then a visible START_COUNTDOWN_SECONDS-second countdown
+		-- before wave 1 (gives players time to check the shop / get oriented).
 		task.wait(Config.PRE_WAVE_DELAY)
+		print(string.format("[RoundManager] Start countdown — wave 1 in %ds", Config.START_COUNTDOWN_SECONDS))
+		runBreak(1, Config.START_COUNTDOWN_SECONDS)
 
 		local wave = 0
 		while not GameManager.IsGameOver() and wave < Config.WAVES_TO_WIN do
