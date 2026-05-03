@@ -30,18 +30,33 @@ local healthFill    = healthBar:WaitForChild("Fill")
 local healthText    = healthBar:WaitForChild("Label")
 local currencyLabel = mainUI:WaitForChild("CurrencyLabel")
 local waveLabel     = mainUI:WaitForChild("WaveLabel")
-local upgradeButton = mainUI:WaitForChild("UpgradeButton")
-local upgradePanel  = mainUI:WaitForChild("UpgradePanel")
-local shopButton    = mainUI:WaitForChild("ShopButton")
-local shopPanel     = mainUI:WaitForChild("ShopPanel")
-local cooldownPanel = mainUI:WaitForChild("CooldownPanel")
-local flashOverlay  = mainUI:WaitForChild("FlashOverlay")
-local gameOverPanel = mainUI:WaitForChild("GameOverPanel")
-local goHeadline    = gameOverPanel:WaitForChild("Headline")
-local goWavesStat   = gameOverPanel:WaitForChild("WavesStat")
-local goCoinsStat   = gameOverPanel:WaitForChild("CoinsStat")
-local goLevelStat   = gameOverPanel:WaitForChild("LevelStat")
-local retryButton   = gameOverPanel:WaitForChild("RetryButton")
+-- Strict child lookup with a clear error if Rojo failed to sync something.
+-- The default WaitForChild times out silently after 5s and returns nil — every
+-- subsequent index then crashes with "attempt to index nil," which doesn't
+-- point at the missing child. This wraps that.
+local function strictChild(parent, childName)
+	local child = parent:WaitForChild(childName, 5)
+	if not child then
+		error(string.format(
+			"[ClientMain] Missing child %q under %s — likely Rojo sync issue. Try `rojo build -o discord-mod-simulator.rbxlx` and reopen the place.",
+			childName, parent:GetFullName()
+		))
+	end
+	return child
+end
+
+local upgradeButton = strictChild(mainUI, "UpgradeButton")
+local upgradePanel  = strictChild(mainUI, "UpgradePanel")
+local shopButton    = strictChild(mainUI, "ShopButton")
+local shopPanel     = strictChild(mainUI, "ShopPanel")
+local cooldownPanel = strictChild(mainUI, "CooldownPanel")
+local flashOverlay  = strictChild(mainUI, "FlashOverlay")
+local gameOverPanel = strictChild(mainUI, "GameOverPanel")
+local goHeadline    = strictChild(gameOverPanel, "Headline")
+local goWavesStat   = strictChild(gameOverPanel, "WavesStat")
+local goCoinsStat   = strictChild(gameOverPanel, "CoinsStat")
+local goLevelStat   = strictChild(gameOverPanel, "LevelStat")
+local retryButton   = strictChild(gameOverPanel, "RetryButton")
 
 local runEnded = false  -- set true once either GameOver or GameWon fires
 
