@@ -29,7 +29,7 @@
 
 **Day:** 30 (Phase 6 closed — **30-day plan COMPLETE**)
 **Phase:** 6 — Launch · CLOSED
-**Next phase:** post-launch iteration based on real player metrics. **Game live as "Server Mod Simulator"** at https://www.roblox.com/share?code=6b575d753764f741a2a25711acdc3a7b
+**Next phase:** **v2 rolling-cadence upgrade in progress** — see `docs/V2-PLAN.md` for the 8-week sprint roadmap (more rounds, cosmetics, Maze Mode, opt-in Hard Mode, Donator gamepass). **Game live as "Server Mod Simulator"** at https://www.roblox.com/share?code=6b575d753764f741a2a25711acdc3a7b
 
 > See `DEVLOG-NOTES.md` for per-session details. This is the at-a-glance state.
 
