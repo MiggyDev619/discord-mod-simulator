@@ -159,8 +159,10 @@ function MapPolish.Apply()
 	)
 	head.Shape = Enum.PartType.Ball
 	head.Transparency = 0.05
-	-- Eye on the front (toward the lane — facing the action)
-	local eyePos = wumpusBase + Vector3.new(0, 2.8, 0) + (-laneDir * 1.0)
+	-- Eye on the front — flipped to face the BASE side (where the player
+	-- spawns now). +laneDir points from EnemyStart toward ServerZone, so the
+	-- eye + pupil get offset along +laneDir to look toward the moderator.
+	local eyePos = wumpusBase + Vector3.new(0, 2.8, 0) + (laneDir * 1.0)
 	local eye = makePart(
 		Map, "WumpusEye",
 		Vector3.new(0.9, 0.9, 0.9),
@@ -171,7 +173,7 @@ function MapPolish.Apply()
 	local pupil = makePart(
 		Map, "WumpusPupil",
 		Vector3.new(0.4, 0.4, 0.4),
-		CFrame.new(eyePos + (-laneDir * 0.3)),
+		CFrame.new(eyePos + (laneDir * 0.3)),
 		Color3.fromRGB(15, 15, 18), Enum.Material.SmoothPlastic
 	)
 	pupil.Shape = Enum.PartType.Ball
