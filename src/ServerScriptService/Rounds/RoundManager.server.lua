@@ -133,6 +133,30 @@ chooseMode.OnServerEvent:Connect(function(player, modeKey, hardMode)
 	workspace:SetAttribute("CurrentHardMode", hardMode == true)
 	print(string.format("[RoundManager] Mode chosen by %s: %s (hardMode=%s)",
 		player.Name, modeKey, tostring(hardMode == true)))
+
+	-- v2 fix-up: if Maze Mode, teleport all current player characters to the
+	-- maze center base so they spawn at the defended position. Lane Mode
+	-- doesn't teleport (Lane spawn = SpawnLocation behind ServerZone, already
+	-- in the right place).
+	if modeKey == "Maze" then
+		local map  = workspace:FindFirstChild("Map")
+		local base = map and map:FindFirstChild("MazeGen_CenterBase")
+		if base then
+			local destination = base.Position + Vector3.new(0, 4, 0)  -- spawn slightly above the base
+			for _, p in ipairs(Players:GetPlayers()) do
+				local character = p.Character
+				if character then
+					local root = character:FindFirstChild("HumanoidRootPart")
+					if root then
+						root.CFrame = CFrame.new(destination)
+					end
+				end
+			end
+		else
+			warn("[RoundManager] Maze Mode chosen but MazeGen_CenterBase not found — run MazeGenerator.Apply() first")
+		end
+	end
+
 	lobbyEvent:Fire()
 end)
 

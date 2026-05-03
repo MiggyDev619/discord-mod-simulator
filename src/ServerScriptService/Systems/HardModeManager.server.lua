@@ -12,18 +12,46 @@
 -- and 1-4 players that's <50 cheap Vector3 magnitude calcs per frame —
 -- negligible.
 
-local Players    = game:GetService("Players")
-local RunService = game:GetService("RunService")
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Players             = game:GetService("Players")
+local RunService          = game:GetService("RunService")
+local ReplicatedStorage   = game:GetService("ReplicatedStorage")
+local ServerScriptService = game:GetService("ServerScriptService")
 
-local Shared = ReplicatedStorage:WaitForChild("Shared")
-local Config = require(Shared:WaitForChild("Config"))
+local Shared      = ReplicatedStorage:WaitForChild("Shared")
+local Config      = require(Shared:WaitForChild("Config"))
+local GameManager = require(ServerScriptService:WaitForChild("Systems"):WaitForChild("GameManager"))
 
 local lastDamageTime = {}  -- [player] = tick of last damage taken (for i-frames)
 
 Players.PlayerRemoving:Connect(function(player)
 	lastDamageTime[player] = nil
 end)
+
+-- v2 fix-up: in Hard Mode, character death triggers FULL game over (server
+-- TakeDamage with 99999 → instant SERVER DEAD → GameOverPanel + RETRY).
+-- Player death = run over. Lane Mode unaffected — character respawns normally.
+local function setupCharacterDeathHook(player, character)
+	local hum = character:WaitForChild("Humanoid", 5)
+	if not hum then return end
+	hum.Died:Connect(function()
+		if workspace:GetAttribute("CurrentHardMode") and not GameManager.IsGameOver() then
+			print("[HardModeManager]", player.Name, "died in Hard Mode — triggering game over")
+			GameManager.TakeDamage(99999)
+		end
+	end)
+end
+
+local function setupPlayer(player)
+	if player.Character then setupCharacterDeathHook(player, player.Character) end
+	player.CharacterAdded:Connect(function(character)
+		setupCharacterDeathHook(player, character)
+	end)
+end
+
+Players.PlayerAdded:Connect(setupPlayer)
+for _, p in ipairs(Players:GetPlayers()) do
+	task.spawn(setupPlayer, p)
+end
 
 -- Per-frame proximity damage. Skips entirely when Hard Mode is off.
 RunService.Heartbeat:Connect(function()

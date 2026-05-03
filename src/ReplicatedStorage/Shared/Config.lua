@@ -252,9 +252,12 @@ Config.PERSISTENCE_AUTOSAVE_INTERVAL = 60  -- seconds between dirty-player autos
 -- Hard Mode (v2 Week 7) — opt-in difficulty toggle in the lobby. When the run
 -- has CurrentHardMode true, enemies damage the player character on touch.
 -- Compensation: 2× coin reward in Hard Mode.
-Config.HARD_MODE_TOUCH_DAMAGE         = 8     -- HP per touch tick (player Humanoid takes damage)
-Config.HARD_MODE_TOUCH_RADIUS         = 4     -- studs — distance at which an enemy is "touching"
-Config.HARD_MODE_INVINCIBILITY_FRAMES = 1.5   -- seconds of i-frames after taking damage
+-- Hard Mode tunables — bumped per user feedback. Damage HIGH so player has to
+-- actually dodge enemies; respawn-after-death disabled (death = game over for
+-- the whole run).
+Config.HARD_MODE_TOUCH_DAMAGE         = 18    -- HP per touch tick (was 8 — too gentle)
+Config.HARD_MODE_TOUCH_RADIUS         = 4.5   -- studs — slightly wider than enemy size
+Config.HARD_MODE_INVINCIBILITY_FRAMES = 1.0   -- seconds of i-frames after taking damage (was 1.5)
 Config.HARD_MODE_COIN_BONUS           = 2     -- multiplier on coin rewards while CurrentHardMode is true
 
 -- XP / player level. XP earned per ban = enemy's base coin Reward (combo

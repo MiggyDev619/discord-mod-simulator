@@ -1,7 +1,7 @@
 {
-  "className": "Frame",
+  "className": "ScrollingFrame",
   "properties": {
-    "Size": {"UDim2": [[0, 360], [0, 0]]},
+    "Size": {"UDim2": [[0, 360], [0, 420]]},
     "Position": {"UDim2": [[1, -12], [0, 204]]},
     "AnchorPoint": {"Vector2": [1, 0]},
     "BackgroundColor3": [0.0353, 0.0353, 0.0431],
@@ -9,7 +9,12 @@
     "BorderSizePixel": 0,
     "Visible": false,
     "ZIndex": 50,
-    "AutomaticSize": "Y"
+    "ScrollBarThickness": 6,
+    "ScrollBarImageColor3": [0.6, 0.4, 0.85],
+    "ScrollBarImageTransparency": 0.3,
+    "AutomaticCanvasSize": "Y",
+    "CanvasSize": {"UDim2": [[0, 0], [0, 0]]},
+    "ScrollingDirection": "Y"
   },
   "children": [
     { "className": "UICorner",  "properties": { "CornerRadius": {"UDim": [0, 8]} } },
@@ -27,7 +32,7 @@
         "PaddingTop":    {"UDim": [0, 10]},
         "PaddingBottom": {"UDim": [0, 10]},
         "PaddingLeft":   {"UDim": [0, 10]},
-        "PaddingRight":  {"UDim": [0, 10]}
+        "PaddingRight":  {"UDim": [0, 14]}
       }
     },
     {

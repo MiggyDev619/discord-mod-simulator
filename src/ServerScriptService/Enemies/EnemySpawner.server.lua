@@ -22,6 +22,46 @@ local map        = workspace:WaitForChild("Map")
 local enemyStart = map:WaitForChild("EnemyStart")
 local serverZone = map:WaitForChild("ServerZone")
 
+-- v2 fix-up: maze-mode helpers. EnemySpawner reads workspace.CurrentMode
+-- per-spawn + per-frame; falls back to lane geometry if the maze parts aren't
+-- present (user hasn't run MazeGenerator.Apply()).
+local function isMazeMode()
+	return workspace:GetAttribute("CurrentMode") == "Maze"
+end
+
+local function findMazeSpawnPoints()
+	local spawns = {}
+	for _, child in ipairs(map:GetChildren()) do
+		if child:GetAttribute("MazeSpawn") then
+			table.insert(spawns, child)
+		end
+	end
+	return spawns
+end
+
+local function findMazeBase()
+	return map:FindFirstChild("MazeGen_CenterBase")
+end
+
+local function destinationPosition()
+	if isMazeMode() then
+		local base = findMazeBase()
+		if base then return base.Position end
+	end
+	return serverZone.Position
+end
+
+local function spawnPosition()
+	if isMazeMode() then
+		local spawns = findMazeSpawnPoints()
+		if #spawns > 0 then
+			local pick = spawns[math.random(1, #spawns)]
+			return pick.Position + Vector3.new(math.random(-1, 1), 1, math.random(-1, 1))
+		end
+	end
+	return enemyStart.Position + Vector3.new(math.random(-4, 4), 2, math.random(-4, 4))
+end
+
 local MUTE_FREEZE_COLOR = Color3.fromRGB(70, 150, 255)  -- Mute Gun first-hit freeze (same blue as old mute)
 
 local activeEnemies      = {}
@@ -164,9 +204,9 @@ local function spawnEnemy(typeName, speedMultiplier, spawnPos, sizeOverride, spe
 	if spawnPos then
 		enemy.Position = spawnPos
 	else
-		enemy.Position = enemyStart.Position + Vector3.new(
-			math.random(-4, 4), 2, math.random(-4, 4)
-		)
+		-- v2 fix-up: spawnPosition() picks lane EnemyStart or random maze
+		-- entrance based on workspace.CurrentMode.
+		enemy.Position = spawnPosition()
 	end
 	enemy.Parent = workspace
 
@@ -309,7 +349,7 @@ end
 RunService.Heartbeat:Connect(function(dt)
 	if GameManager.IsGameOver() then return end
 
-	local zonePos = serverZone.Position
+	local zonePos = destinationPosition()  -- v2: maze base or lane ServerZone based on CurrentMode
 	local now     = tick()
 
 	for i = #activeEnemies, 1, -1 do
