@@ -469,14 +469,30 @@ RunService.Heartbeat:Connect(function(dt)
 		end
 
 		-- Teleporters warp toward the zone every TELEPORTER_INTERVAL. Either freeze
-		-- blocks the warp; without that, frozen Teleporters would still warp.
+		-- blocks the warp.
+		-- v2 fix-up #3: in Maze Mode, direct teleport-toward-destination warps
+		-- INTO walls (back-and-forth ping-pong as user reported). Fix: in maze
+		-- mode, teleport ALONG the cached path — snap to a waypoint 3 ahead +
+		-- advance the index. Stays on path, still feels like a warp.
 		if data.typeName == "Teleporter" and data.nextTeleport and now >= data.nextTeleport then
 			if not frozenUntil and not muteFrozenUntil then
-				local toZone = zonePos - enemy.Position
-				if toZone.Magnitude > 0 then
-					local jump   = toZone.Unit * Config.TELEPORTER_DISTANCE
-					local oldPos = enemy.Position
-					local newPos = oldPos + Vector3.new(jump.X, 0, jump.Z)
+				local oldPos = enemy.Position
+				local newPos
+				if data.waypoints and data.currentWaypoint and data.currentWaypoint <= #data.waypoints then
+					-- Maze: jump 3 waypoints ahead along the path
+					local targetIdx = math.min(data.currentWaypoint + 3, #data.waypoints)
+					newPos = data.waypoints[targetIdx].Position + Vector3.new(0, 1, 0)
+					data.currentWaypoint = targetIdx + 1  -- start moving toward waypoint AFTER the jump landing
+					data.lastWpAdvance   = now
+				else
+					-- Lane: original direct-toward-zone teleport
+					local toZone = zonePos - enemy.Position
+					if toZone.Magnitude > 0 then
+						local jump = toZone.Unit * Config.TELEPORTER_DISTANCE
+						newPos = oldPos + Vector3.new(jump.X, 0, jump.Z)
+					end
+				end
+				if newPos then
 					enemy.Position = newPos
 					Effects.TeleportEffect(oldPos, newPos)
 				end

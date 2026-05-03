@@ -171,8 +171,11 @@ local function buildGeometry(Map, grid, mazeOrigin)
 	local mazeSize = GRID_N * CELL_SIZE
 	local floorY   = mazeOrigin.Y - 0.2
 
-	-- Floor
-	makePart(Map, "Floor", Vector3.new(mazeSize + 4, 0.4, mazeSize + 4),
+	-- Floor — sized EXACTLY to maze (no overhang past walls). Combined with
+	-- the elevation in mazeOrigin Y, this means there's no walkable surface
+	-- outside the perimeter walls at maze level — PathfindingService can't
+	-- route around the maze.
+	makePart(Map, "Floor", Vector3.new(mazeSize, 0.4, mazeSize),
 		CFrame.new(mazeOrigin + Vector3.new(0, -0.2, 0)),
 		FLOOR, Enum.Material.SmoothPlastic)
 
@@ -275,7 +278,14 @@ function MazeGenerator.Apply()
 	local laneVec  = serverZone.Position - enemyStart.Position
 	local laneDir  = (laneVec.Magnitude > 0) and laneVec.Unit or Vector3.new(1, 0, 0)
 	local lanePerp = Vector3.new(-laneDir.Z, 0, laneDir.X)
-	local mazeOrigin = enemyStart.Position + lanePerp * 240  -- bumped from 200 to clear the bigger maze
+	-- v2 fix-up #3: elevate maze 5 studs above EnemyStart Y. PathfindingService
+	-- was routing OUTSIDE the maze through gate openings → around perimeter →
+	-- back in through another gate, because the baseplate (or floor extension)
+	-- gave it walkable surface at maze level just outside the walls. Elevation +
+	-- shrunk floor (no overhang) make the area outside-walls non-walkable for
+	-- AgentCanJump=false agents. Maze floats; teleport-on-mode-pick lifts the
+	-- player to it.
+	local mazeOrigin = enemyStart.Position + lanePerp * 240 + Vector3.new(0, 5, 0)
 
 	local MazePathCache = require(script.Parent:WaitForChild("MazePathCache"))
 

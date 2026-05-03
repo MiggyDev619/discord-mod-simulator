@@ -228,9 +228,12 @@ retryRun.OnServerEvent:Connect(function(player)
 		return
 	end
 
-	print("[RoundManager] Retry from", player.Name, "— resetting state and restarting run")
+	print("[RoundManager] Retry from", player.Name, "— resetting state and returning to lobby")
 	clearAll:Invoke()
 	GameManager.Reset()
 	CurrencyManager.ResetRun(player)
-	startRun(true)  -- reuse prior mode, skip lobby
+	-- v2 fix-up #3: retry always returns to lobby (was: skipLobby=true reused
+	-- prior mode). User can switch between Lane/Maze freely between runs +
+	-- fall-off-map deaths in Maze are recoverable via mode re-pick.
+	startRun(false)
 end)

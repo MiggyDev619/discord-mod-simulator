@@ -27,17 +27,33 @@ Players.PlayerRemoving:Connect(function(player)
 	lastDamageTime[player] = nil
 end)
 
--- v2 fix-up: in Hard Mode, character death triggers FULL game over (server
--- TakeDamage with 99999 → instant SERVER DEAD → GameOverPanel + RETRY).
--- Player death = run over. Lane Mode unaffected — character respawns normally.
+-- v2 fix-up: character death triggers FULL game over in two cases:
+--   1. Hard Mode (any map) — was already shipped.
+--   2. Maze Mode (any sub-mode) — added per user request after fall-off bug.
+--      Falling off the maze respawns at lane SpawnLocation by default, which
+--      is jarring. Treat death-while-in-maze as run-over so the player gets
+--      the GameOverPanel → RETRY → lobby flow.
+-- Lane Mode (non-Hard) unaffected — character respawns normally.
+local function shouldDeathEndRun()
+	return workspace:GetAttribute("CurrentHardMode")
+		or workspace:GetAttribute("CurrentMode") == "Maze"
+end
+
+local function triggerDeathGameOver(player, reason)
+	if GameManager.IsGameOver() then return end
+	if not shouldDeathEndRun() then return end
+	print(string.format("[HardModeManager] %s %s — triggering game over (mode=%s, hard=%s)",
+		player.Name, reason,
+		tostring(workspace:GetAttribute("CurrentMode")),
+		tostring(workspace:GetAttribute("CurrentHardMode"))))
+	GameManager.TakeDamage(99999)
+end
+
 local function setupCharacterDeathHook(player, character)
 	local hum = character:WaitForChild("Humanoid", 5)
 	if not hum then return end
 	hum.Died:Connect(function()
-		if workspace:GetAttribute("CurrentHardMode") and not GameManager.IsGameOver() then
-			print("[HardModeManager]", player.Name, "died in Hard Mode — triggering game over")
-			GameManager.TakeDamage(99999)
-		end
+		triggerDeathGameOver(player, "died (Humanoid.Died)")
 	end)
 end
 
@@ -45,6 +61,14 @@ local function setupPlayer(player)
 	if player.Character then setupCharacterDeathHook(player, player.Character) end
 	player.CharacterAdded:Connect(function(character)
 		setupCharacterDeathHook(player, character)
+	end)
+	-- CharacterRemoving catches the fall-off-map case where Roblox destroys
+	-- the character before Humanoid.Died fires. Brief task.delay lets Died
+	-- fire first if it's going to (avoids double-fire).
+	player.CharacterRemoving:Connect(function()
+		task.delay(0.15, function()
+			triggerDeathGameOver(player, "character removed (likely fell off map)")
+		end)
 	end)
 end
 
